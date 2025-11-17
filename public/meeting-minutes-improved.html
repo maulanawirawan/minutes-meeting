@@ -4444,7 +4444,7 @@
 
                 const container = document.getElementById('entitiesContainer');
 
-                if (!entities || entities.length === 0) {
+                if (!entities || !Array.isArray(entities) || entities.length === 0) {
                     container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-secondary);">No entities detected yet.</div>';
                     return;
                 }

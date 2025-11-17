@@ -95,7 +95,13 @@ async function transcribeWithAssemblyAIEnhanced(filePath, language = 'id', enabl
         // ✅ STORE TRANSCRIPT ID for later use (SRT/VTT/Word Search)
         if (meetingId && transcript.id) {
             await query(
-                'UPDATE audio_files SET assembly_transcript_id = $1 WHERE meeting_id = $2 ORDER BY uploaded_at DESC LIMIT 1',
+                `UPDATE audio_files SET assembly_transcript_id = $1
+                 WHERE id = (
+                     SELECT id FROM audio_files
+                     WHERE meeting_id = $2
+                     ORDER BY uploaded_at DESC
+                     LIMIT 1
+                 )`,
                 [transcript.id, meetingId]
             );
             console.log(`💾 Stored AssemblyAI Transcript ID: ${transcript.id}`);
