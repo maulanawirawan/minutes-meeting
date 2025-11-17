@@ -1860,6 +1860,196 @@ app.post('/api/meetings/:id/summary', authMiddleware, async (req, res) => {
     }
 });
 
+// ==================== ENHANCED FEATURES API ====================
+
+// Get meeting highlights
+app.get('/api/meetings/:id/highlights', authMiddleware, async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Verify meeting ownership
+        const meeting = await queryOne(
+            'SELECT id FROM meetings WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL',
+            [id, req.userId]
+        );
+
+        if (!meeting) {
+            return res.status(404).json({
+                success: false,
+                error: 'Meeting not found'
+            });
+        }
+
+        const highlights = await queryAll(
+            `SELECT * FROM meeting_highlights
+             WHERE meeting_id = $1 AND deleted_at IS NULL
+             ORDER BY rank DESC, count DESC`,
+            [id]
+        );
+
+        res.json({
+            success: true,
+            data: highlights
+        });
+    } catch (error) {
+        console.error('❌ Get highlights error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch highlights'
+        });
+    }
+});
+
+// Get meeting sentiment analysis
+app.get('/api/meetings/:id/sentiment', authMiddleware, async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Verify meeting ownership
+        const meeting = await queryOne(
+            'SELECT id FROM meetings WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL',
+            [id, req.userId]
+        );
+
+        if (!meeting) {
+            return res.status(404).json({
+                success: false,
+                error: 'Meeting not found'
+            });
+        }
+
+        const sentimentData = await queryAll(
+            `SELECT
+                sentiment,
+                sentiment_score,
+                speaker,
+                text,
+                timestamp
+             FROM transcripts
+             WHERE meeting_id = $1 AND deleted_at IS NULL
+             ORDER BY sequence_number, timestamp`,
+            [id]
+        );
+
+        // Calculate overall sentiment
+        const total = sentimentData.length;
+        const positive = sentimentData.filter(s => s.sentiment === 'POSITIVE').length;
+        const negative = sentimentData.filter(s => s.sentiment === 'NEGATIVE').length;
+        const neutral = sentimentData.filter(s => s.sentiment === 'NEUTRAL').length;
+
+        res.json({
+            success: true,
+            data: {
+                overall: {
+                    total,
+                    positive,
+                    negative,
+                    neutral,
+                    positivePercent: total > 0 ? Math.round((positive / total) * 100) : 0,
+                    negativePercent: total > 0 ? Math.round((negative / total) * 100) : 0,
+                    neutralPercent: total > 0 ? Math.round((neutral / total) * 100) : 0
+                },
+                details: sentimentData
+            }
+        });
+    } catch (error) {
+        console.error('❌ Get sentiment error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch sentiment analysis'
+        });
+    }
+});
+
+// Get meeting entities
+app.get('/api/meetings/:id/entities', authMiddleware, async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Verify meeting ownership
+        const meeting = await queryOne(
+            'SELECT id FROM meetings WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL',
+            [id, req.userId]
+        );
+
+        if (!meeting) {
+            return res.status(404).json({
+                success: false,
+                error: 'Meeting not found'
+            });
+        }
+
+        const entities = await queryAll(
+            `SELECT * FROM meeting_entities
+             WHERE meeting_id = $1 AND deleted_at IS NULL
+             ORDER BY entity_type, start_time`,
+            [id]
+        );
+
+        // Group by entity type
+        const grouped = entities.reduce((acc, entity) => {
+            const type = entity.entity_type || 'other';
+            if (!acc[type]) {
+                acc[type] = [];
+            }
+            acc[type].push(entity);
+            return acc;
+        }, {});
+
+        res.json({
+            success: true,
+            data: {
+                all: entities,
+                byType: grouped
+            }
+        });
+    } catch (error) {
+        console.error('❌ Get entities error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch entities'
+        });
+    }
+});
+
+// Get meeting chapters
+app.get('/api/meetings/:id/chapters', authMiddleware, async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Verify meeting ownership
+        const meeting = await queryOne(
+            'SELECT id FROM meetings WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL',
+            [id, req.userId]
+        );
+
+        if (!meeting) {
+            return res.status(404).json({
+                success: false,
+                error: 'Meeting not found'
+            });
+        }
+
+        const chapters = await queryAll(
+            `SELECT * FROM meeting_chapters
+             WHERE meeting_id = $1 AND deleted_at IS NULL
+             ORDER BY sequence_number, start_time`,
+            [id]
+        );
+
+        res.json({
+            success: true,
+            data: chapters
+        });
+    } catch (error) {
+        console.error('❌ Get chapters error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch chapters'
+        });
+    }
+});
+
 // ==================== EXPORT API ====================
 
 app.post('/api/export/pdf', authMiddleware, async (req, res) => {

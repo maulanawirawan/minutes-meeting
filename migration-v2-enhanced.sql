@@ -372,71 +372,35 @@ CREATE TRIGGER update_summaries_updated_at BEFORE UPDATE ON meeting_summaries
 INSERT INTO users (username, email, password, name, role, is_active, email_verified) VALUES
 ('admin', 'admin@narameet.com', '$2a$10$kuZ.TeXlz40rbwnyNqQhk.z/cRvcPmVJrs0iCq2FIp7LdaUKP1Y4a', 'Administrator', 'admin', true, true);
 
--- Insert sample user (optional - comment out if not needed)
--- Password: user123
+-- Insert employee accounts (karyawan01-25)
+-- Password: Narameet2025! (bcrypt hashed)
 INSERT INTO users (username, email, password, name, role, is_active, email_verified) VALUES
-('user', 'user@narameet.com', '$2a$10$H7fR5ZqP.xQk.6YlPqX9aOVqE8GfPqJK5vI.MQwKdH5Y.LnLmEQ.a', 'Test User', 'user', true, true);
+('karyawan01', 'karyawan01@narameet.com', '$2a$10$iKQgjY25AwVMaPgR3ekszOHQFB59YYHMnrYBwUAscjcNAs3tEEW1C', 'Karyawan 01', 'user', true, true),
+('karyawan02', 'karyawan02@narameet.com', '$2a$10$iKQgjY25AwVMaPgR3ekszOHQFB59YYHMnrYBwUAscjcNAs3tEEW1C', 'Karyawan 02', 'user', true, true),
+('karyawan03', 'karyawan03@narameet.com', '$2a$10$iKQgjY25AwVMaPgR3ekszOHQFB59YYHMnrYBwUAscjcNAs3tEEW1C', 'Karyawan 03', 'user', true, true),
+('karyawan04', 'karyawan04@narameet.com', '$2a$10$iKQgjY25AwVMaPgR3ekszOHQFB59YYHMnrYBwUAscjcNAs3tEEW1C', 'Karyawan 04', 'user', true, true),
+('karyawan05', 'karyawan05@narameet.com', '$2a$10$iKQgjY25AwVMaPgR3ekszOHQFB59YYHMnrYBwUAscjcNAs3tEEW1C', 'Karyawan 05', 'user', true, true),
+('karyawan06', 'karyawan06@narameet.com', '$2a$10$iKQgjY25AwVMaPgR3ekszOHQFB59YYHMnrYBwUAscjcNAs3tEEW1C', 'Karyawan 06', 'user', true, true),
+('karyawan07', 'karyawan07@narameet.com', '$2a$10$iKQgjY25AwVMaPgR3ekszOHQFB59YYHMnrYBwUAscjcNAs3tEEW1C', 'Karyawan 07', 'user', true, true),
+('karyawan08', 'karyawan08@narameet.com', '$2a$10$iKQgjY25AwVMaPgR3ekszOHQFB59YYHMnrYBwUAscjcNAs3tEEW1C', 'Karyawan 08', 'user', true, true),
+('karyawan09', 'karyawan09@narameet.com', '$2a$10$iKQgjY25AwVMaPgR3ekszOHQFB59YYHMnrYBwUAscjcNAs3tEEW1C', 'Karyawan 09', 'user', true, true),
+('karyawan10', 'karyawan10@narameet.com', '$2a$10$iKQgjY25AwVMaPgR3ekszOHQFB59YYHMnrYBwUAscjcNAs3tEEW1C', 'Karyawan 10', 'user', true, true),
+('karyawan11', 'karyawan11@narameet.com', '$2a$10$iKQgjY25AwVMaPgR3ekszOHQFB59YYHMnrYBwUAscjcNAs3tEEW1C', 'Karyawan 11', 'user', true, true),
+('karyawan12', 'karyawan12@narameet.com', '$2a$10$iKQgjY25AwVMaPgR3ekszOHQFB59YYHMnrYBwUAscjcNAs3tEEW1C', 'Karyawan 12', 'user', true, true),
+('karyawan13', 'karyawan13@narameet.com', '$2a$10$iKQgjY25AwVMaPgR3ekszOHQFB59YYHMnrYBwUAscjcNAs3tEEW1C', 'Karyawan 13', 'user', true, true),
+('karyawan14', 'karyawan14@narameet.com', '$2a$10$iKQgjY25AwVMaPgR3ekszOHQFB59YYHMnrYBwUAscjcNAs3tEEW1C', 'Karyawan 14', 'user', true, true),
+('karyawan15', 'karyawan15@narameet.com', '$2a$10$iKQgjY25AwVMaPgR3ekszOHQFB59YYHMnrYBwUAscjcNAs3tEEW1C', 'Karyawan 15', 'user', true, true),
+('karyawan16', 'karyawan16@narameet.com', '$2a$10$iKQgjY25AwVMaPgR3ekszOHQFB59YYHMnrYBwUAscjcNAs3tEEW1C', 'Karyawan 16', 'user', true, true),
+('karyawan17', 'karyawan17@narameet.com', '$2a$10$iKQgjY25AwVMaPgR3ekszOHQFB59YYHMnrYBwUAscjcNAs3tEEW1C', 'Karyawan 17', 'user', true, true),
+('karyawan18', 'karyawan18@narameet.com', '$2a$10$iKQgjY25AwVMaPgR3ekszOHQFB59YYHMnrYBwUAscjcNAs3tEEW1C', 'Karyawan 18', 'user', true, true),
+('karyawan19', 'karyawan19@narameet.com', '$2a$10$iKQgjY25AwVMaPgR3ekszOHQFB59YYHMnrYBwUAscjcNAs3tEEW1C', 'Karyawan 19', 'user', true, true),
+('karyawan20', 'karyawan20@narameet.com', '$2a$10$iKQgjY25AwVMaPgR3ekszOHQFB59YYHMnrYBwUAscjcNAs3tEEW1C', 'Karyawan 20', 'user', true, true),
+('karyawan21', 'karyawan21@narameet.com', '$2a$10$iKQgjY25AwVMaPgR3ekszOHQFB59YYHMnrYBwUAscjcNAs3tEEW1C', 'Karyawan 21', 'user', true, true),
+('karyawan22', 'karyawan22@narameet.com', '$2a$10$iKQgjY25AwVMaPgR3ekszOHQFB59YYHMnrYBwUAscjcNAs3tEEW1C', 'Karyawan 22', 'user', true, true),
+('karyawan23', 'karyawan23@narameet.com', '$2a$10$iKQgjY25AwVMaPgR3ekszOHQFB59YYHMnrYBwUAscjcNAs3tEEW1C', 'Karyawan 23', 'user', true, true),
+('karyawan24', 'karyawan24@narameet.com', '$2a$10$iKQgjY25AwVMaPgR3ekszOHQFB59YYHMnrYBwUAscjcNAs3tEEW1C', 'Karyawan 24', 'user', true, true),
+('karyawan25', 'karyawan25@narameet.com', '$2a$10$iKQgjY25AwVMaPgR3ekszOHQFB59YYHMnrYBwUAscjcNAs3tEEW1C', 'Karyawan 25', 'user', true, true);
 
--- ================================================================
--- SAMPLE DATA: Contacts (optional)
--- ================================================================
-
--- Insert sample contacts for admin user
-INSERT INTO contacts (user_id, name, email, phone, role, company, is_shared) VALUES
-(1, 'John Doe', 'john@company.com', '+62 812-3456-7890', 'Project Manager', 'Tech Corp', true),
-(1, 'Jane Smith', 'jane@company.com', '+62 813-4567-8901', 'Senior Developer', 'Tech Corp', true),
-(1, 'Bob Johnson', 'bob@company.com', '+62 814-5678-9012', 'UX Designer', 'Design Studio', true),
-(1, 'Alice Williams', 'alice@startup.com', '+62 815-6789-0123', 'CEO', 'StartupXYZ', false),
-(1, 'Charlie Brown', 'charlie@agency.com', '+62 816-7890-1234', 'Marketing Director', 'Creative Agency', false);
-
--- ================================================================
--- SAMPLE DATA: Demo meeting (optional)
--- ================================================================
-
--- Insert sample meeting
-INSERT INTO meetings (user_id, title, date, location, status, room_name, created_by) VALUES
-(1, 'Sample Q4 Planning Meeting', '2025-01-15 14:00:00', 'Meeting Room A', 'completed', 'narameet-demo-q4-planning', 1);
-
--- Insert sample participants for demo meeting
-INSERT INTO participants (meeting_id, name, email, phone, role, attended) VALUES
-(1, 'John Doe', 'john@company.com', '+62 812-3456-7890', 'Project Manager', true),
-(1, 'Jane Smith', 'jane@company.com', '+62 813-4567-8901', 'Developer', true),
-(1, 'Bob Johnson', 'bob@company.com', '+62 814-5678-9012', 'Designer', true);
-
--- Insert sample transcript with sentiment
-INSERT INTO transcripts (meeting_id, speaker, text, confidence_score, start_time, end_time, sequence_number, sentiment, sentiment_score) VALUES
-(1, 'John Doe', 'Welcome everyone to our Q4 planning meeting. Today we will discuss our goals and objectives.', 0.95, 0, 5000, 1, 'POSITIVE', 0.87),
-(1, 'Jane Smith', 'Thank you John. I would like to start with the technical roadmap for next quarter.', 0.92, 5000, 10000, 2, 'NEUTRAL', 0.65),
-(1, 'Bob Johnson', 'Great! I have prepared some design mockups for the new features.', 0.94, 10000, 15000, 3, 'POSITIVE', 0.92);
-
--- Insert sample highlights
-INSERT INTO meeting_highlights (meeting_id, text, count, rank, timestamps) VALUES
-(1, 'Q4 planning', 3, 0.95, '[{"start": 0, "end": 5000}, {"start": 10000, "end": 15000}]'),
-(1, 'technical roadmap', 2, 0.85, '[{"start": 5000, "end": 10000}]');
-
--- Insert sample entities
-INSERT INTO meeting_entities (meeting_id, entity_type, text, start_time, end_time) VALUES
-(1, 'person_name', 'John Doe', 0, 1000),
-(1, 'person_name', 'Jane Smith', 5000, 6000),
-(1, 'person_name', 'Bob Johnson', 10000, 11000),
-(1, 'date', 'Q4', 2000, 2500);
-
--- Insert sample chapter
-INSERT INTO meeting_chapters (meeting_id, headline, summary, gist, start_time, end_time, sequence_number) VALUES
-(1, 'Meeting Introduction', 'John welcomes everyone and outlines the agenda for Q4 planning discussion', 'Q4 planning kickoff', 0, 5000, 1),
-(1, 'Technical Discussion', 'Jane presents the technical roadmap for the upcoming quarter', 'Technical roadmap', 5000, 10000, 2);
-
--- Insert sample summary
-INSERT INTO meeting_summaries (meeting_id, key_points, action_items, next_meeting_date, created_by) VALUES
-(1,
-'1. Q4 goals discussed and approved
-2. Technical roadmap presented
-3. Design mockups reviewed',
-'1. John - Finalize budget allocation by next week
-2. Jane - Complete technical specification document
-3. Bob - Update design system documentation',
-'2025-01-22 14:00:00',
-1);
 
 -- ================================================================
 -- VIEWS: Useful database views
