@@ -1,33 +1,4 @@
-version: '3.8'
-
 services:
-  # ==========================================
-  # Whisper Speech Recognition (FREE!)
-  # ==========================================
-  whisper:
-    image: onerahmet/openai-whisper-asr-webservice:latest
-    container_name: narameet-whisper
-    ports:
-      - "9000:9000"
-    environment:
-      - ASR_MODEL=base
-      - ASR_ENGINE=openai_whisper
-    volumes:
-      - whisper-models:/root/.cache/whisper
-    restart: unless-stopped
-    networks:
-      - narameet-network
-    deploy:
-      resources:
-        limits:
-          cpus: '2'
-          memory: 4G
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
   # ==========================================
   # Backend API (Node.js + Express)
   # ==========================================
@@ -43,8 +14,7 @@ services:
       - NODE_ENV=production
       - PORT=3000
       - HOST=0.0.0.0
-      - HTTPS_PORT=8443  # ← TAMBAH INI
-      - WHISPER_API_URL=http://whisper:9000
+      - HTTPS_PORT=8443
       - DATABASE_URL=postgresql://narameet:narameet123@postgres:5432/narameet?sslmode=disable
       - REDIS_URL=redis://redis:6379
       - JWT_SECRET=${JWT_SECRET}
@@ -57,8 +27,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
-      whisper:
-        condition: service_healthy
     volumes:
       - ./uploads:/app/uploads
       - ./logs:/app/logs
@@ -164,8 +132,6 @@ services:
       - postgres
 
 volumes:
-  whisper-models:
-    driver: local
   postgres-data:
     driver: local
   redis-data:
