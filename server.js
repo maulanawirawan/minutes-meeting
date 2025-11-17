@@ -1473,10 +1473,10 @@ app.post('/api/transcribe', authMiddleware, upload.single('audio'), async (req, 
         let savedTranscripts = [];
         for (let i = 0; i < transcriptSegments.length; i++) {
             const segment = transcriptSegments[i];
-            
+
             const result = await queryOne(
-                `INSERT INTO transcripts (meeting_id, speaker, text, start_time, end_time, sequence_number, confidence_score)
-                 VALUES ($1, $2, $3, $4, $5, $6, $7)
+                `INSERT INTO transcripts (meeting_id, speaker, text, start_time, end_time, sequence_number, confidence_score, sentiment, sentiment_score)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
                  RETURNING *`,
                 [
                     meeting_id,
@@ -1485,10 +1485,12 @@ app.post('/api/transcribe', authMiddleware, upload.single('audio'), async (req, 
                     segment.start,
                     segment.end,
                     i,
-                    segment.confidence || 0.95
+                    segment.confidence || 0.95,
+                    segment.sentiment || 'NEUTRAL',
+                    segment.sentiment_score || 0.5
                 ]
             );
-            
+
             savedTranscripts.push(result);
         }
         
