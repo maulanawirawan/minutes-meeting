@@ -1,0 +1,180 @@
+version: '3.8'
+
+services:
+  # ==========================================
+  # Whisper Speech Recognition (FREE!)
+  # ==========================================
+  whisper:
+    image: onerahmet/openai-whisper-asr-webservice:latest
+    container_name: narameet-whisper
+    ports:
+      - "9000:9000"
+    environment:
+      - ASR_MODEL=base
+      - ASR_ENGINE=openai_whisper
+    volumes:
+      - whisper-models:/root/.cache/whisper
+    restart: unless-stopped
+    networks:
+      - narameet-network
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ==========================================
+  # Backend API (Node.js + Express)
+  # ==========================================
+  backend:
+    build: .
+    container_name: narameet-backend
+    ports:
+      - "0.0.0.0:8000:3000"
+      - "0.0.0.0:8443:8443"  # ← TAMBAH INI (HTTPS port)
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOST=0.0.0.0
+      - HTTPS_PORT=8443  # ← TAMBAH INI
+      - WHISPER_API_URL=http://whisper:9000
+      - DATABASE_URL=postgresql://narameet:narameet123@postgres:5432/narameet?sslmode=disable
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=${JWT_SECRET}
+      - ENABLE_AUTH=${ENABLE_AUTH}
+      - JITSI_APP_ID=${JITSI_APP_ID}
+      - JITSI_PRIVATE_KEY_PATH=${JITSI_PRIVATE_KEY_PATH}
+      - JITSI_KID=${JITSI_KID}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      whisper:
+        condition: service_healthy
+    volumes:
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+      - ./public:/app/public
+      - ./ssl-certs:/app/ssl-certs:ro  # ← TAMBAH INI (mount SSL certificates)
+    restart: unless-stopped
+    networks:
+      - narameet-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 60s
+      timeout: 30s
+      retries: 5
+      start_period: 60s
+
+  # ==========================================
+  # PostgreSQL Database
+  # ==========================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: narameet-db
+    environment:
+      - POSTGRES_DB=narameet
+      - POSTGRES_USER=narameet
+      - POSTGRES_PASSWORD=narameet123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - narameet-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U narameet"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ==========================================
+  # Redis (Session & Cache)
+  # ==========================================
+  redis:
+    image: redis:7-alpine
+    container_name: narameet-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    networks:
+      - narameet-network
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # ==========================================
+  # N8N Workflow Automation (FREE!)
+  # ==========================================
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: narameet-n8n
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=admin
+      - N8N_BASIC_AUTH_PASSWORD=admin123
+      - N8N_HOST=0.0.0.0
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - WEBHOOK_URL=http://n8n:5678/
+      - GENERIC_TIMEZONE=Asia/Jakarta
+      - N8N_METRICS=true
+    volumes:
+      - n8n-data:/home/node/.n8n
+    restart: unless-stopped
+    networks:
+      - narameet-network
+    depends_on:
+      - postgres
+
+  # ==========================================
+  # PGADMIN (Database Management)
+  # ==========================================
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: narameet-pgadmin
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@narameet.com
+      - PGADMIN_DEFAULT_PASSWORD=admin123
+      - PGADMIN_LISTEN_PORT=80
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    restart: unless-stopped
+    networks:
+      - narameet-network
+    depends_on:
+      - postgres
+
+volumes:
+  whisper-models:
+    driver: local
+  postgres-data:
+    driver: local
+  redis-data:
+    driver: local
+  n8n-data:
+    driver: local
+  pgadmin-data:
+    driver: local
+
+networks:
+  narameet-network:
+    driver: bridge
