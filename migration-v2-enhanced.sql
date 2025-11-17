@@ -19,6 +19,7 @@ DROP TABLE IF EXISTS audio_files CASCADE;
 DROP TABLE IF EXISTS transcripts CASCADE;
 DROP TABLE IF EXISTS participants CASCADE;
 DROP TABLE IF EXISTS meetings CASCADE;
+DROP TABLE IF EXISTS contacts CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
 
 -- Enable UUID extension (for better IDs if needed)
@@ -48,6 +49,30 @@ CREATE INDEX idx_users_username ON users(username) WHERE deleted_at IS NULL;
 CREATE INDEX idx_users_email ON users(email) WHERE deleted_at IS NULL;
 CREATE INDEX idx_users_role ON users(role) WHERE deleted_at IS NULL;
 CREATE INDEX idx_users_active ON users(is_active) WHERE deleted_at IS NULL;
+
+-- ================================================================
+-- TABLE: contacts
+-- ================================================================
+-- Purpose: Store contact information for quick participant selection
+CREATE TABLE contacts (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    phone VARCHAR(50),
+    role VARCHAR(255), -- Job title/role
+    company VARCHAR(255),
+    is_shared BOOLEAN DEFAULT false, -- Shared across all users
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP -- Soft delete
+);
+
+-- Indexes for contacts table
+CREATE INDEX idx_contacts_user ON contacts(user_id) WHERE deleted_at IS NULL;
+CREATE INDEX idx_contacts_email ON contacts(email) WHERE deleted_at IS NULL;
+CREATE INDEX idx_contacts_name ON contacts(name) WHERE deleted_at IS NULL;
+CREATE INDEX idx_contacts_shared ON contacts(is_shared) WHERE deleted_at IS NULL;
 
 -- ================================================================
 -- TABLE: meetings
@@ -351,6 +376,18 @@ INSERT INTO users (username, email, password, name, role, is_active, email_verif
 -- Password: user123
 INSERT INTO users (username, email, password, name, role, is_active, email_verified) VALUES
 ('user', 'user@narameet.com', '$2a$10$H7fR5ZqP.xQk.6YlPqX9aOVqE8GfPqJK5vI.MQwKdH5Y.LnLmEQ.a', 'Test User', 'user', true, true);
+
+-- ================================================================
+-- SAMPLE DATA: Contacts (optional)
+-- ================================================================
+
+-- Insert sample contacts for admin user
+INSERT INTO contacts (user_id, name, email, phone, role, company, is_shared) VALUES
+(1, 'John Doe', 'john@company.com', '+62 812-3456-7890', 'Project Manager', 'Tech Corp', true),
+(1, 'Jane Smith', 'jane@company.com', '+62 813-4567-8901', 'Senior Developer', 'Tech Corp', true),
+(1, 'Bob Johnson', 'bob@company.com', '+62 814-5678-9012', 'UX Designer', 'Design Studio', true),
+(1, 'Alice Williams', 'alice@startup.com', '+62 815-6789-0123', 'CEO', 'StartupXYZ', false),
+(1, 'Charlie Brown', 'charlie@agency.com', '+62 816-7890-1234', 'Marketing Director', 'Creative Agency', false);
 
 -- ================================================================
 -- SAMPLE DATA: Demo meeting (optional)
