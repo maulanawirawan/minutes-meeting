@@ -133,6 +133,73 @@
             width: 100%;
             height: 100%;
         }
+
+        /* ✅ Recording Controls */
+        #recording-controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            background: rgba(10, 10, 30, 0.95);
+            border: 2px solid #00ff88;
+            padding: 15px 25px;
+            border-radius: 10px;
+            display: none;
+            box-shadow: 0 0 30px rgba(0, 255, 136, 0.5);
+        }
+
+        .recording-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1em;
+            color: #00ff88;
+        }
+
+        .rec-indicator {
+            width: 12px;
+            height: 12px;
+            background: #ff0066;
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+
+        .rec-indicator.stopped {
+            background: #666;
+            animation: none;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+        }
+
+        .rec-time {
+            font-family: 'Courier New', monospace;
+            color: #00ffff;
+        }
+
+        .rec-btn {
+            padding: 8px 20px;
+            background: linear-gradient(45deg, rgba(0, 255, 136, 0.2), rgba(0, 255, 255, 0.2));
+            border: 2px solid #00ff88;
+            color: #00ff88;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: all 0.3s;
+            margin-left: 10px;
+        }
+
+        .rec-btn:hover {
+            background: rgba(0, 255, 136, 0.3);
+        }
+
+        .rec-btn.stop {
+            border-color: #ff0066;
+            color: #ff0066;
+        }
     </style>
 </head>
 <body>
@@ -156,6 +223,16 @@
         </div>
     </div>
     
+    <!-- Recording Controls -->
+    <div id="recording-controls">
+        <div class="recording-status">
+            <div class="rec-indicator" id="rec-indicator"></div>
+            <span id="rec-status">Recording...</span>
+            <span class="rec-time" id="rec-time">00:00</span>
+            <button class="rec-btn stop" id="stop-rec-btn" onclick="stopRecording()">⏹ Stop Recording</button>
+        </div>
+    </div>
+
     <!-- Jitsi Meet Container -->
     <div id="meet-container" style="display: none;">
         <div id="jitsi-meet"></div>
@@ -185,11 +262,143 @@
         };
         
         let jitsiApi = null;
-        
+        let mediaRecorder = null;
+        let recordedChunks = [];
+        let recordingStartTime = null;
+        let recordingTimer = null;
+        let meetingId = null;
+
         function updateStatus(msg) {
             const el = document.getElementById('loading-details');
             if (el) el.textContent = msg;
             console.log('📝', msg);
+        }
+
+        // ✅ Recording Functions
+        async function startRecording() {
+            try {
+                console.log('🔴 Starting recording...');
+
+                // Show recording controls
+                document.getElementById('recording-controls').style.display = 'block';
+
+                // Get display + audio stream
+                const stream = await navigator.mediaDevices.getDisplayMedia({
+                    video: {
+                        displaySurface: "browser",
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 }
+                    },
+                    audio: true
+                });
+
+                // Add microphone audio
+                try {
+                    const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    audioStream.getAudioTracks().forEach(track => stream.addTrack(track));
+                } catch (e) {
+                    console.warn('⚠️ Could not add microphone:', e);
+                }
+
+                mediaRecorder = new MediaRecorder(stream, {
+                    mimeType: 'video/webm;codecs=vp8,opus',
+                    videoBitsPerSecond: 2500000
+                });
+
+                recordedChunks = [];
+
+                mediaRecorder.ondataavailable = (e) => {
+                    if (e.data.size > 0) {
+                        recordedChunks.push(e.data);
+                    }
+                };
+
+                mediaRecorder.onstop = async () => {
+                    console.log('⏹ Recording stopped, uploading...');
+                    await uploadRecording();
+                };
+
+                mediaRecorder.start(1000); // Collect data every second
+                recordingStartTime = Date.now();
+
+                // Start timer
+                recordingTimer = setInterval(updateRecordingTime, 1000);
+
+                // Notify backend
+                const token = StorageManager.getItem('token');
+                await fetch(`${window.API_URL}/api/meetings/${meetingId}/start-recording`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                console.log('✅ Recording started successfully');
+            } catch (error) {
+                console.error('❌ Recording error:', error);
+                document.getElementById('recording-controls').style.display = 'none';
+            }
+        }
+
+        function updateRecordingTime() {
+            if (!recordingStartTime) return;
+
+            const elapsed = Math.floor((Date.now() - recordingStartTime) / 1000);
+            const minutes = Math.floor(elapsed / 60).toString().padStart(2, '0');
+            const seconds = (elapsed % 60).toString().padStart(2, '0');
+
+            document.getElementById('rec-time').textContent = `${minutes}:${seconds}`;
+        }
+
+        async function stopRecording() {
+            if (!mediaRecorder || mediaRecorder.state === 'inactive') return;
+
+            console.log('⏹ Stopping recording...');
+
+            // Stop timer
+            if (recordingTimer) {
+                clearInterval(recordingTimer);
+                recordingTimer = null;
+            }
+
+            // Update UI
+            document.getElementById('rec-indicator').classList.add('stopped');
+            document.getElementById('rec-status').textContent = 'Processing...';
+            document.getElementById('stop-rec-btn').disabled = true;
+
+            // Stop recorder
+            mediaRecorder.stop();
+            mediaRecorder.stream.getTracks().forEach(track => track.stop());
+        }
+
+        async function uploadRecording() {
+            try {
+                updateStatus('Uploading recording...');
+
+                const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                const formData = new FormData();
+                formData.append('recording', blob, `meeting-${meetingId}-${Date.now()}.webm`);
+
+                const token = StorageManager.getItem('token');
+                const response = await fetch(`${window.API_URL}/api/meetings/${meetingId}/upload-recording`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                });
+
+                if (response.ok) {
+                    console.log('✅ Recording uploaded successfully');
+                } else {
+                    console.error('❌ Upload failed:', await response.text());
+                }
+            } catch (error) {
+                console.error('❌ Upload error:', error);
+            } finally {
+                document.getElementById('recording-controls').style.display = 'none';
+            }
         }
         
         async function initJitsi() {
@@ -198,11 +407,13 @@
                 await window.API_READY;
                 
                 updateStatus('Reading meeting ID...');
-                const meetingId = new URLSearchParams(window.location.search).get('meeting');
-                
+                meetingId = new URLSearchParams(window.location.search).get('meeting');
+
                 if (!meetingId) {
                     throw new Error('No meeting ID. Please start from dashboard.');
                 }
+
+                console.log(`📝 Meeting ID: ${meetingId}`);
                 
                 const token = StorageManager.getItem('token');
                 if (!token) {
@@ -291,17 +502,38 @@
                 });
                 
                 // Events
-                jitsiApi.addEventListener('videoConferenceJoined', (data) => {
+                jitsiApi.addEventListener('videoConferenceJoined', async (data) => {
                     console.log('✅ Joined:', data);
+
+                    // ✅ AUTO-START RECORDING
+                    setTimeout(async () => {
+                        try {
+                            await startRecording();
+                            console.log('🎬 Auto-recording started');
+                        } catch (e) {
+                            console.warn('⚠️ Could not start auto-recording:', e);
+                        }
+                    }, 2000); // Wait 2 seconds for Jitsi to fully initialize
                 });
-                
-                jitsiApi.addEventListener('videoConferenceLeft', () => {
+
+                jitsiApi.addEventListener('videoConferenceLeft', async () => {
                     console.log('👋 Left meeting');
-                    setTimeout(() => window.close(), 500);
+
+                    // ✅ STOP RECORDING
+                    if (mediaRecorder && mediaRecorder.state === 'recording') {
+                        await stopRecording();
+                        // Wait for upload to complete
+                        setTimeout(() => window.close(), 3000);
+                    } else {
+                        setTimeout(() => window.close(), 500);
+                    }
                 });
-                
+
                 jitsiApi.addEventListener('readyToClose', () => {
-                    window.close();
+                    if (mediaRecorder && mediaRecorder.state === 'recording') {
+                        stopRecording();
+                    }
+                    setTimeout(() => window.close(), 2000);
                 });
                 
             } catch (error) {
@@ -317,7 +549,17 @@
         }
         
         // Cleanup
-        window.addEventListener('beforeunload', () => {
+        window.addEventListener('beforeunload', async () => {
+            // Stop recording if active
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                try {
+                    await stopRecording();
+                } catch (e) {
+                    console.error('❌ Cleanup recording error:', e);
+                }
+            }
+
+            // Dispose Jitsi
             if (jitsiApi) {
                 try {
                     jitsiApi.dispose();
