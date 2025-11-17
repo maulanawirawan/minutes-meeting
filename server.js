@@ -24,6 +24,10 @@ const assemblyClient = new AssemblyAI({
 
 console.log('✅ AssemblyAI SDK initialized');
 
+// ✅ Load enhancements module
+const enhancements = require('./server-enhancements');
+console.log('✅ AssemblyAI Enhancements module loaded');
+
 let emailTransporter = null;
 let nodemailer = null;
 
@@ -391,11 +395,26 @@ const upload = multer({
         const allowedTypes = /wav|mp3|m4a|ogg|webm|flac|aac|opus/;
         const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
         const mimetype = allowedTypes.test(file.mimetype);
-        
+
         if (mimetype && extname) {
             return cb(null, true);
         }
         cb(new Error('Only audio files are allowed'));
+    }
+});
+
+// ✅ Multer config for video recordings
+const uploadRecording = multer({
+    storage: storage,
+    limits: { fileSize: 500 * 1024 * 1024 }, // 500MB limit for recordings
+    fileFilter: (req, file, cb) => {
+        const allowedTypes = /wav|mp3|m4a|ogg|webm|flac|aac|opus|mp4|avi|mov|mkv/;
+        const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+
+        if (extname) {
+            return cb(null, true);
+        }
+        cb(new Error('Only audio/video files are allowed'));
     }
 });
 
@@ -489,121 +508,20 @@ async function generateKeyterms(meetingId) {
 // ==================== ASSEMBLY AI TRANSCRIPTION FUNCTIONS ====================
 
 /**
- * Transcribe audio file with AssemblyAI (with speaker diarization + keyterms)
+ * ✅ ENHANCED: Transcribe audio file with AssemblyAI
+ * Now includes: Auto Highlights, Sentiment Analysis, Entity Detection, Auto Chapters
  */
 async function transcribeWithAssemblyAI(filePath, language = 'id', enableDiarization = true, meetingId = null) {
-    try {
-        console.log('🚀 Starting AssemblyAI transcription...');
-        console.log(`📍 File: ${filePath}`);
-        console.log(`🌍 Language: ${language === 'multi' ? 'Multilingual' : language}`);
-        console.log(`🎭 Speaker Diarization: ${enableDiarization ? 'Enabled' : 'Disabled'}`);
-        
-        // ✅ GENERATE KEYTERMS (NEW!)
-        let keyterms = [];
-        if (meetingId) {
-            keyterms = await generateKeyterms(meetingId);
-        }
-        
-        // ✅ UPDATED OPTIONS WITH KEYTERMS
-        const transcriptionOptions = {
-            audio: filePath,
-            speaker_labels: enableDiarization,
-            language_code: language === 'multi' ? undefined : language,
-            language_detection: language === 'multi',
-            
-            // ✅ FITUR BARU:
-            speech_model: "universal",  // Model terbaik dari AssemblyAI
-            
-            // ✅ KEYTERMS BOOST (21% accuracy improvement!)
-            ...(keyterms.length > 0 && {
-                word_boost: keyterms,
-                boost_param: "high"  // low/default/high
-            })
-        };
-        
-        console.log('📤 Transcription options:', transcriptionOptions);
-        
-        // Upload file and transcribe
-        const transcript = await assemblyClient.transcripts.transcribe(transcriptionOptions);
-        
-        console.log('✅ AssemblyAI transcription completed');
-        console.log(`📊 Status: ${transcript.status}`);
-        console.log(`📝 Text length: ${transcript.text?.length || 0} characters`);
-        
-        if (transcript.status === 'error') {
-            throw new Error(`Transcription failed: ${transcript.error}`);
-        }
-        
-        // Process utterances (speaker-separated segments)
-        if (transcript.utterances && transcript.utterances.length > 0) {
-            console.log(`🎤 Found ${transcript.utterances.length} utterances with speaker labels`);
-            
-            return transcript.utterances.map((utterance, index) => ({
-                text: utterance.text.trim(),
-                start: utterance.start,
-                end: utterance.end,
-                speaker: `Speaker ${utterance.speaker}`,
-                confidence: utterance.confidence || 0.95,
-                sequence: index
-            }));
-        } 
-        
-        // Fallback to words if no utterances
-        if (transcript.words && transcript.words.length > 0) {
-            console.log(`📝 Using word-level timestamps (${transcript.words.length} words)`);
-            
-            // Group words into sentences
-            const sentences = [];
-            let currentSentence = [];
-            let sentenceStart = 0;
-            
-            transcript.words.forEach((word, index) => {
-                if (currentSentence.length === 0) {
-                    sentenceStart = word.start;
-                }
-                
-                currentSentence.push(word.text);
-                
-                // End sentence on punctuation or every 15 words
-                const endsWithPunctuation = /[.!?]$/.test(word.text);
-                const isLongEnough = currentSentence.length >= 15;
-                
-                if (endsWithPunctuation || isLongEnough || index === transcript.words.length - 1) {
-                    sentences.push({
-                        text: currentSentence.join(' '),
-                        start: sentenceStart,
-                        end: word.end,
-                        speaker: 'Speaker A',
-                        confidence: 0.90,
-                        sequence: sentences.length
-                    });
-                    currentSentence = [];
-                }
-            });
-            
-            return sentences;
-        }
-        
-        // Final fallback - use full text
-        if (transcript.text && transcript.text.trim()) {
-            console.log('ℹ️ Using full text as single segment');
-            return [{
-                text: transcript.text.trim(),
-                start: 0,
-                end: 30000,
-                speaker: 'Speaker A',
-                confidence: 0.95,
-                sequence: 0
-            }];
-        }
-        
-        console.warn('⚠️ No transcription data found');
-        return [];
-        
-    } catch (error) {
-        console.error('❌ AssemblyAI transcription error:', error);
-        throw new Error(`AssemblyAI transcription failed: ${error.message}`);
-    }
+    // Use enhanced transcription from enhancements module
+    return await enhancements.transcribeWithAssemblyAIEnhanced(
+        filePath,
+        language,
+        enableDiarization,
+        meetingId,
+        assemblyClient,
+        queryOne,
+        query
+    );
 }
 
 /**
@@ -2936,6 +2854,13 @@ process.on('SIGINT', async () => {
     await pool.end();
     process.exit(0);
 });
+
+// ==================== SETUP ENHANCEMENTS ====================
+
+// ✅ Setup all enhanced endpoints (SRT/VTT, Word Search, Highlights, Entities, Chapters, etc.)
+enhancements.setupEnhancements(app, assemblyClient, authMiddleware, query, queryOne, uploadRecording);
+
+console.log('✅ Enhanced endpoints configured');
 
 // ==================== START SERVER ====================
 
