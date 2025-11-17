@@ -45,6 +45,17 @@ ON audio_files(assembly_transcript_id)
 WHERE assembly_transcript_id IS NOT NULL;
 
 -- ================================================================
+-- FIX 4: Add sentiment columns to transcripts table
+-- ================================================================
+ALTER TABLE transcripts
+ADD COLUMN IF NOT EXISTS sentiment VARCHAR(20),
+ADD COLUMN IF NOT EXISTS sentiment_score DECIMAL(5,4);
+
+CREATE INDEX IF NOT EXISTS idx_transcripts_sentiment
+ON transcripts(sentiment)
+WHERE sentiment IS NOT NULL;
+
+-- ================================================================
 -- Verify changes
 -- ================================================================
 SELECT
@@ -63,7 +74,19 @@ SELECT
     'assembly_transcript_id column' as item,
     CASE WHEN COUNT(*) > 0 THEN '✅ EXISTS' ELSE '❌ MISSING' END as status
 FROM information_schema.columns
-WHERE table_name = 'audio_files' AND column_name = 'assembly_transcript_id';
+WHERE table_name = 'audio_files' AND column_name = 'assembly_transcript_id'
+UNION ALL
+SELECT
+    'sentiment column' as item,
+    CASE WHEN COUNT(*) > 0 THEN '✅ EXISTS' ELSE '❌ MISSING' END as status
+FROM information_schema.columns
+WHERE table_name = 'transcripts' AND column_name = 'sentiment'
+UNION ALL
+SELECT
+    'sentiment_score column' as item,
+    CASE WHEN COUNT(*) > 0 THEN '✅ EXISTS' ELSE '❌ MISSING' END as status
+FROM information_schema.columns
+WHERE table_name = 'transcripts' AND column_name = 'sentiment_score';
 
 -- Success message
 SELECT '🎉 Schema fixes applied successfully!' as message;
