@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - naraMeet v3.0</title>
+    <script src="/api-config.js"></script>
+    <style>
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #1a0a2e;
+            --bg-tertiary: #0f0f2a;
+            --color-primary: #00ff88;
+            --color-secondary: #00ffff;
+            --color-accent: #ff00ff;
+            --color-danger: #ff0066;
+            --color-warning: #ffaa00;
+            --text-primary: #00ff88;
+            --text-secondary: rgba(0, 255, 136, 0.7);
+            --border-color: #00ff88;
+            --card-bg: rgba(10, 10, 30, 0.95);
+            --glow-intensity: 1;
+            --animation-speed: 1;
+        }
+        
+        [data-theme="light"] {
+            --bg-primary: #f0f9ff;
+            --bg-secondary: #e6f3ff;
+            --bg-tertiary: #d4e9ff;
+            --color-primary: #00cc66;
+            --color-secondary: #0099ff;
+            --color-accent: #ff0099;
+            --color-danger: #ff0044;
+            --color-warning: #ff8800;
+            --text-primary: #003366;
+            --text-secondary: #0066aa;
+            --border-color: linear-gradient(135deg, #00cc66, #0099ff);
+            --card-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(230, 243, 255, 0.95));
+            --glow-intensity: 1.5;
+            --animation-speed: 0.8;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 50%, var(--bg-tertiary) 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        /* Light Mode Background Enhancement */
+        [data-theme="light"] body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(0, 153, 255, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(255, 0, 153, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 40% 20%, rgba(0, 204, 102, 0.15) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        /* Ultra Animated Background */
+        .cyber-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                repeating-linear-gradient(0deg, rgba(0, 255, 136, 0.03) 0px, transparent 1px, transparent 2px, rgba(0, 255, 136, 0.03) 3px),
+                repeating-linear-gradient(90deg, rgba(0, 255, 136, 0.03) 0px, transparent 1px, transparent 2px, rgba(0, 255, 136, 0.03) 3px);
+            animation: gridMove 20s linear infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        [data-theme="light"] .cyber-bg {
+            background: 
+                repeating-linear-gradient(45deg, rgba(0, 153, 255, 0.05) 0px, transparent 10px),
+                repeating-linear-gradient(-45deg, rgba(0, 204, 102, 0.05) 0px, transparent 10px),
+                repeating-linear-gradient(0deg, rgba(255, 0, 153, 0.02) 0px, transparent 20px);
+            animation: gridPulse 20s ease-in-out infinite;
+        }
+        
+        @keyframes gridMove {
+            0% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(25px, 25px) scale(1.05); }
+            100% { transform: translate(50px, 50px) scale(1); }
+        }
+        
+        @keyframes gridPulse {
+            0%, 100% { 
+                transform: translate(0, 0) scale(1); 
+                opacity: 0.5;
+            }
+            50% { 
+                transform: translate(10px, -10px) scale(1.05); 
+                opacity: 1;
+            }
+        }
+        
+        /* Floating Orbs */
+        .floating-orb {
+            position: fixed;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 1;
+            animation: floatOrb 20s infinite ease-in-out;
+        }
+        
+        .floating-orb:nth-child(2) {
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(0, 255, 136, 0.1) 0%, transparent 70%);
+            top: -200px;
+            left: -200px;
+        }
+        
+        .floating-orb:nth-child(3) {
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(0, 255, 255, 0.1) 0%, transparent 70%);
+            bottom: -250px;
+            right: -250px;
+            animation-delay: -10s;
+        }
+        
+        .floating-orb:nth-child(4) {
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(255, 0, 255, 0.1) 0%, transparent 70%);
+            top: 50%;
+            left: -150px;
+            animation-delay: -5s;
+        }
+        
+        [data-theme="light"] .floating-orb:nth-child(2) {
+            background: radial-gradient(circle, rgba(0, 204, 102, 0.15) 0%, transparent 70%);
+        }
+        
+        [data-theme="light"] .floating-orb:nth-child(3) {
+            background: radial-gradient(circle, rgba(0, 153, 255, 0.15) 0%, transparent 70%);
+        }
+        
+        [data-theme="light"] .floating-orb:nth-child(4) {
+            background: radial-gradient(circle, rgba(255, 0, 153, 0.15) 0%, transparent 70%);
+        }
+        
+        @keyframes floatOrb {
+            0%, 100% {
+                transform: translate(0, 0) scale(1);
+            }
+            33% {
+                transform: translate(30px, -30px) scale(1.1);
+            }
+            66% {
+                transform: translate(-20px, 20px) scale(0.9);
+            }
+        }
+        
+        /* Ultra Login Container */
+        .login-container {
+            position: relative;
+            z-index: 10;
+            max-width: 500px;
+            width: 90%;
+            background: var(--card-bg);
+            border: 3px solid var(--border-color);
+            padding: 60px 50px;
+            clip-path: polygon(30px 0, 100% 0, 100% calc(100% - 30px), calc(100% - 30px) 100%, 0 100%, 0 30px);
+            box-shadow: 
+                0 0 60px rgba(0, 255, 136, 0.5), 
+                inset 0 0 30px rgba(0, 255, 136, 0.05);
+            animation: fadeIn 0.5s;
+            overflow: hidden;
+        }
+        
+        [data-theme="light"] .login-container {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(240, 249, 255, 0.95));
+            border: 3px solid;
+            border-image: linear-gradient(135deg, #00cc66, #0099ff, #ff0099) 1;
+            box-shadow: 
+                0 20px 60px rgba(0, 153, 255, 0.3),
+                0 10px 30px rgba(0, 204, 102, 0.2),
+                inset 0 2px 10px rgba(0, 153, 255, 0.05);
+        }
+        
+        .login-container::before {
+            content: '';
+            position: absolute;
+            top: -3px;
+            left: -3px;
+            right: -3px;
+            bottom: -3px;
+            background: linear-gradient(45deg, var(--color-primary), var(--color-secondary), var(--color-accent), var(--color-primary));
+            border-radius: inherit;
+            z-index: -1;
+            animation: borderRotate 4s linear infinite;
+            opacity: 0.5;
+        }
+        
+        [data-theme="light"] .login-container::before {
+            opacity: 0.8;
+            animation: borderPulse 3s ease-in-out infinite;
+        }
+        
+        @keyframes borderRotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @keyframes borderPulse {
+            0%, 100% { 
+                transform: scale(1); 
+                opacity: 0.5;
+            }
+            50% { 
+                transform: scale(1.02); 
+                opacity: 0.8;
+            }
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(30px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        
+        /* Theme Toggle */
+        .theme-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 11;
+        }
+        
+        .theme-btn {
+            width: 60px;
+            height: 30px;
+            background: var(--card-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 25px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            overflow: hidden;
+        }
+        
+        [data-theme="light"] .theme-btn {
+            background: linear-gradient(135deg, #e6f3ff, #f0f9ff);
+            border: 2px solid;
+            border-image: linear-gradient(135deg, #00cc66, #0099ff) 1;
+        }
+        
+        .theme-btn::after {
+            content: '🌙';
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 22px;
+            height: 22px;
+            background: var(--color-primary);
+            border-radius: 50%;
+            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            box-shadow: 0 0 10px var(--color-primary);
+        }
+        
+        [data-theme="light"] .theme-btn::after {
+            content: '☀️';
+            left: calc(100% - 25px);
+            background: linear-gradient(135deg, #ffaa00, #ff8800);
+            box-shadow: 0 0 20px rgba(255, 136, 0, 0.8);
+        }
+        
+        /* Logo */
+        .logo {
+            font-size: 3.5em;
+            font-weight: bold;
+            text-align: center;
+            background: linear-gradient(45deg, var(--color-primary), var(--color-secondary), var(--color-accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+            animation: glowPulse 2s ease-in-out infinite;
+            display: inline-block;
+            width: 100%;
+        }
+        
+        [data-theme="light"] .logo {
+            background: linear-gradient(90deg, 
+                #00cc66 0%, 
+                #0099ff 25%, 
+                #ff0099 50%, 
+                #0099ff 75%, 
+                #00cc66 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: logoShimmer 3s linear infinite;
+            background-size: 200% 100%;
+        }
+        
+        @keyframes logoShimmer {
+            0% { background-position: -200% center; }
+            100% { background-position: 200% center; }
+        }
+        
+        @keyframes glowPulse {
+            0%, 100% { 
+                filter: brightness(1) drop-shadow(0 0 30px var(--color-primary)); 
+                transform: scale(1);
+            }
+            50% { 
+                filter: brightness(1.5) drop-shadow(0 0 60px var(--color-primary)); 
+                transform: scale(1.05);
+            }
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: var(--color-secondary);
+            font-size: 1.1em;
+            margin-bottom: 40px;
+            text-shadow: 0 0 20px rgba(0, 255, 255, 0.8);
+            animation: slideText 3s ease-in-out infinite;
+        }
+        
+        [data-theme="light"] .subtitle {
+            color: #0099ff;
+            text-shadow: 
+                0 2px 4px rgba(0, 153, 255, 0.3),
+                0 4px 8px rgba(0, 153, 255, 0.2);
+            font-weight: 600;
+        }
+        
+        @keyframes slideText {
+            0%, 100% { transform: translateX(0); }
+            50% { transform: translateX(5px); }
+        }
+        
+        /* Form Groups */
+        .form-group {
+            margin-bottom: 30px;
+            position: relative;
+        }
+        
+        label {
+            display: block;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+            font-weight: bold;
+            font-size: 1.1em;
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+        }
+        
+        [data-theme="light"] label {
+            color: #003366;
+            text-shadow: none;
+            font-weight: 700;
+        }
+        
+        input {
+            width: 100%;
+            padding: 18px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid var(--border-color);
+            color: var(--text-primary);
+            font-family: 'Courier New', monospace;
+            font-size: 1.1em;
+            transition: all 0.3s;
+            position: relative;
+        }
+        
+        [data-theme="light"] input {
+            background: rgba(255, 255, 255, 0.9);
+            border: 2px solid #0099ff;
+            color: #003366;
+            box-shadow: inset 0 2px 5px rgba(0, 153, 255, 0.05);
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: var(--color-secondary);
+            box-shadow: 
+                0 0 30px rgba(0, 255, 255, 0.5),
+                inset 0 0 10px rgba(0, 255, 255, 0.1);
+            background: rgba(0, 0, 0, 0.9);
+        }
+        
+        [data-theme="light"] input:focus {
+            border-color: #ff0099;
+            box-shadow: 
+                0 0 25px rgba(255, 0, 153, 0.3),
+                inset 0 2px 8px rgba(255, 0, 153, 0.05);
+            background: rgba(255, 255, 255, 0.95);
+        }
+        
+        input::placeholder {
+            color: rgba(0, 255, 136, 0.4);
+        }
+        
+        [data-theme="light"] input::placeholder {
+            color: rgba(0, 102, 170, 0.5);
+        }
+        
+        /* Cyber Button */
+        .cyber-btn {
+            width: 100%;
+            padding: 20px;
+            background: linear-gradient(45deg, rgba(0, 255, 136, 0.2), rgba(0, 255, 255, 0.2));
+            border: 3px solid var(--border-color);
+            color: var(--text-primary);
+            font-family: 'Courier New', monospace;
+            font-size: 1.3em;
+            cursor: pointer;
+            transition: all 0.3s;
+            clip-path: polygon(20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%, 0 20px);
+            text-transform: uppercase;
+            font-weight: bold;
+            margin-top: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        [data-theme="light"] .cyber-btn {
+            background: linear-gradient(135deg, 
+                rgba(0, 204, 102, 0.2), 
+                rgba(0, 153, 255, 0.2));
+            border: 3px solid;
+            border-image: linear-gradient(135deg, #00cc66, #0099ff) 1;
+            color: #003366;
+            font-weight: 800;
+            box-shadow: 0 5px 20px rgba(0, 153, 255, 0.3);
+        }
+        
+        .cyber-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: radial-gradient(circle, var(--color-primary) 0%, transparent 70%);
+            transition: all 0.5s;
+            transform: translate(-50%, -50%);
+        }
+        
+        .cyber-btn:hover::before {
+            width: 400px;
+            height: 400px;
+        }
+        
+        .cyber-btn:hover {
+            border-color: var(--color-secondary);
+            box-shadow: 
+                0 0 50px rgba(0, 255, 255, 0.6),
+                inset 0 0 20px rgba(0, 255, 255, 0.1);
+            transform: translateY(-3px) scale(1.02);
+        }
+        
+        [data-theme="light"] .cyber-btn:hover {
+            border-image: linear-gradient(135deg, #0099ff, #ff0099) 1;
+            box-shadow: 
+                0 8px 30px rgba(0, 153, 255, 0.4),
+                0 4px 15px rgba(255, 0, 153, 0.2);
+            transform: translateY(-3px) scale(1.02);
+        }
+        
+        .cyber-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        /* Status Message */
+        .status-message {
+            padding: 20px;
+            margin: 25px 0;
+            border-left: 5px solid var(--border-color);
+            background: rgba(0, 255, 136, 0.1);
+            color: var(--text-primary);
+            animation: slideIn 0.3s;
+            display: none;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        [data-theme="light"] .status-message {
+            background: linear-gradient(135deg, 
+                rgba(0, 204, 102, 0.1), 
+                rgba(0, 204, 102, 0.05));
+            border-left: 5px solid #00cc66;
+            color: #003366;
+            box-shadow: 0 3px 10px rgba(0, 204, 102, 0.2);
+        }
+        
+        .status-message::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transform: translateX(-100%);
+            animation: statusShimmer 2s infinite;
+        }
+        
+        @keyframes statusShimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        .status-message.show {
+            display: block;
+        }
+        
+        .status-message.error {
+            border-left-color: var(--color-danger);
+            background: rgba(255, 0, 102, 0.1);
+            color: var(--color-danger);
+        }
+        
+        [data-theme="light"] .status-message.error {
+            background: linear-gradient(135deg, 
+                rgba(255, 0, 68, 0.1), 
+                rgba(255, 0, 68, 0.05));
+            border-left-color: #ff0044;
+            color: #ff0044;
+        }
+        
+        .status-message.success {
+            border-left-color: var(--color-secondary);
+            background: rgba(0, 255, 255, 0.1);
+            color: var(--color-secondary);
+        }
+        
+        [data-theme="light"] .status-message.success {
+            background: linear-gradient(135deg, 
+                rgba(0, 153, 255, 0.1), 
+                rgba(0, 153, 255, 0.05));
+            border-left-color: #0099ff;
+            color: #0099ff;
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        /* Info Box */
+        .info-box {
+            background: linear-gradient(135deg, rgba(0, 255, 255, 0.1), rgba(255, 0, 255, 0.1));
+            border: 2px solid var(--color-secondary);
+            padding: 20px;
+            margin: 25px 0;
+            font-size: 0.95em;
+            color: var(--color-secondary);
+            border-radius: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        [data-theme="light"] .info-box {
+            background: linear-gradient(135deg, 
+                rgba(0, 153, 255, 0.08), 
+                rgba(255, 0, 153, 0.08));
+            border: 2px solid;
+            border-image: linear-gradient(135deg, #0099ff, #ff0099) 1;
+            color: #0066aa;
+            font-weight: 600;
+        }
+        
+        .info-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--color-secondary), transparent);
+            animation: scanLine 3s linear infinite;
+        }
+        
+        @keyframes scanLine {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+        
+        .info-box strong {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--color-accent);
+            font-size: 1.1em;
+        }
+        
+        [data-theme="light"] .info-box strong {
+            color: #ff0099;
+        }
+        
+        /* Footer */
+        .footer {
+            text-align: center;
+            margin-top: 35px;
+            color: rgba(0, 255, 136, 0.5);
+            font-size: 0.9em;
+            position: relative;
+        }
+        
+        [data-theme="light"] .footer {
+            color: #0066aa;
+        }
+        
+        .footer p:last-child {
+            margin-top: 10px;
+            font-size: 0.8em;
+            opacity: 0.7;
+        }
+        
+        /* Loading Spinner */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0, 255, 136, 0.3);
+            border-top-color: var(--color-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            vertical-align: middle;
+            margin-left: 10px;
+        }
+        
+        [data-theme="light"] .loading {
+            border: 3px solid rgba(0, 153, 255, 0.3);
+            border-top-color: #0099ff;
+            box-shadow: 0 0 10px rgba(0, 153, 255, 0.5);
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Particles */
+        .particle {
+            position: fixed;
+            width: 4px;
+            height: 4px;
+            background: var(--color-primary);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 1;
+            animation: particleFloat 15s infinite linear;
+        }
+        
+        .particle:nth-child(odd) {
+            background: var(--color-secondary);
+            width: 6px;
+            height: 6px;
+        }
+        
+        @keyframes particleFloat {
+            0% {
+                transform: translateY(100vh) translateX(0) scale(0);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+                transform: translateY(80vh) translateX(10px) scale(1);
+            }
+            90% {
+                opacity: 1;
+                transform: translateY(10vh) translateX(-10px) scale(1);
+            }
+            100% {
+                transform: translateY(-10vh) translateX(0) scale(0);
+                opacity: 0;
+            }
+        }
+        
+        [data-theme="light"] .particle {
+            filter: brightness(1.5) saturate(1.5);
+        }
+    </style>
+</head>
+<body data-theme="dark">
+    <!-- Ultra Animated Background -->
+    <div class="cyber-bg"></div>
+    
+    <!-- Floating Orbs -->
+    <div class="floating-orb"></div>
+    <div class="floating-orb"></div>
+    <div class="floating-orb"></div>
+    
+    <!-- Particles -->
+    <script>
+        for(let i = 0; i < 20; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            particle.style.left = Math.random() * 100 + '%';
+            particle.style.animationDelay = Math.random() * 15 + 's';
+            particle.style.animationDuration = (Math.random() * 10 + 10) + 's';
+            document.body.appendChild(particle);
+        }
+    </script>
+    
+    <div class="login-container">
+        <!-- Theme Toggle -->
+        <div class="theme-toggle">
+            <div class="theme-btn" onclick="toggleTheme()"></div>
+        </div>
+        
+        <div class="logo">naraMEET</div>
+        <div class="subtitle">✨ naraMEET - Click. Connect. Collaborate.</div>
+        
+        <div id="statusMessage" class="status-message"></div>
+        
+        <form id="loginForm" onsubmit="handleLogin(event)">
+            <div class="form-group">
+                <label>👤 Username</label>
+                <input type="text" id="username" placeholder="Enter username" required autofocus />
+            </div>
+            <div class="form-group">
+                <label>🔐 Password</label>
+                <input type="password" id="password" placeholder="Enter password" required />
+            </div>
+            <button type="submit" class="cyber-btn" id="loginBtn">
+                <span id="btnText">ACCESS SYSTEM</span>
+            </button>
+        </form>
+        
+        <div class="info-box">
+            <strong>🚀 Welcome to naraMEET!</strong>
+            Enhanced visual experience with dual-mode cyberpunk interface.
+            Your <strong>naraMEET v3.0</strong> command center awaits.
+        </div>
+        
+        <div class="footer">
+            <p>🔥 Powered by naraMEET</p>
+            <p>v3.0.0 - Enhanced Edition</p>
+        </div>
+    </div>
+    
+    <script>
+        // ✅ STORAGE FALLBACK SYSTEM
+        const StorageManager = {
+            _memory: {},
+            
+            setItem(key, value) {
+                try {
+                    localStorage.setItem(key, value);
+                } catch (e) {
+                    console.warn('localStorage blocked, using memory storage');
+                    this._memory[key] = value;
+                    sessionStorage.setItem(key, value); // Try session storage too
+                }
+            },
+            
+            getItem(key) {
+                try {
+                    return localStorage.getItem(key);
+                } catch (e) {
+                    return this._memory[key] || sessionStorage.getItem(key) || null;
+                }
+            },
+            
+            removeItem(key) {
+                try {
+                    localStorage.removeItem(key);
+                } catch (e) {
+                    delete this._memory[key];
+                    sessionStorage.removeItem(key);
+                }
+            }
+        };
+        
+        // Theme management
+        function toggleTheme() {
+            const currentTheme = document.body.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.body.setAttribute('data-theme', newTheme);
+            StorageManager.setItem('theme', newTheme);
+        }
+        
+        // Check if already logged in
+        window.addEventListener('DOMContentLoaded', async function() {
+            // Apply saved theme
+            const savedTheme = StorageManager.getItem('theme') || 'dark';
+            document.body.setAttribute('data-theme', savedTheme);
+            
+            // Wait for API to be ready
+            if (window.API_READY) {
+                await window.API_READY;
+                console.log('✅ API Ready:', window.API_URL);
+            }
+            
+            const token = StorageManager.getItem('token');
+            if (token) {
+                verifyToken(token);
+            }
+        });
+        
+        async function handleLogin(event) {
+            event.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const loginBtn = document.getElementById('loginBtn');
+            const btnText = document.getElementById('btnText');
+            
+            // Disable button
+            loginBtn.disabled = true;
+            btnText.innerHTML = 'ACCESSING <span class="loading"></span>';
+            
+            try {
+                const response = await fetch(`${API_URL}/api/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    // Save token using StorageManager
+                    StorageManager.setItem('token', data.token);
+                    StorageManager.setItem('user', JSON.stringify(data.user));
+                    
+                    // Show success message
+                    showStatus(`✨ Welcome back, ${data.user.name || data.user.username}!`, 'success');
+                    
+                    // Redirect to main app
+                    setTimeout(() => {
+                        window.location.href = 'meeting-minutes-improved.html';
+                    }, 1000);
+                } else {
+                    throw new Error(data.error || 'Login failed');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                showStatus('❌ ' + error.message, 'error');
+                
+                // Re-enable button
+                loginBtn.disabled = false;
+                btnText.textContent = 'ACCESS SYSTEM';
+            }
+        }
+        
+        async function verifyToken(token) {
+            try {
+                const response = await fetch(`${API_URL}/api/verify`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    // Token valid, redirect to main app
+                    window.location.href = 'meeting-minutes-improved.html';
+                } else {
+                    // Token invalid, clear storage
+                    StorageManager.removeItem('token');
+                    StorageManager.removeItem('user');
+                }
+            } catch (error) {
+                console.error('Verification error:', error);
+            }
+        }
+        
+        function showStatus(message, type = 'success') {
+            const statusEl = document.getElementById('statusMessage');
+            statusEl.className = `status-message show ${type}`;
+            statusEl.textContent = message;
+            
+            setTimeout(() => {
+                statusEl.classList.remove('show');
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

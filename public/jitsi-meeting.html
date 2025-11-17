@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>naraMeet - Video Conference</title>
+    
+    <!-- ✅ Disable Service Worker -->
+    <meta http-equiv="origin-trial" content="">
+    
+    <script src="/api-config.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a0a2e 50%, #0f0f2a 100%);
+            color: #00ff88;
+            overflow: hidden;
+        }
+        
+        #loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a0a2e 50%, #0f0f2a 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        
+        .spinner {
+            width: 80px;
+            height: 80px;
+            border: 6px solid rgba(0, 255, 136, 0.3);
+            border-top-color: #00ff88;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .loading-text {
+            margin-top: 30px;
+            font-size: 1.5em;
+            color: #00ff88;
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.8);
+        }
+        
+        .loading-details {
+            margin-top: 15px;
+            font-size: 0.9em;
+            color: #00ffff;
+        }
+        
+        #error-container {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a0a2e 50%, #0f0f2a 100%);
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            padding: 20px;
+        }
+        
+        .error-card {
+            background: rgba(10, 10, 30, 0.9);
+            border: 2px solid #ff0066;
+            padding: 40px;
+            border-radius: 10px;
+            max-width: 600px;
+            text-align: center;
+            box-shadow: 0 0 30px rgba(255, 0, 102, 0.3);
+        }
+        
+        .error-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+        }
+        
+        .error-title {
+            font-size: 1.8em;
+            color: #ff0066;
+            margin-bottom: 20px;
+        }
+        
+        .error-message {
+            color: #00ffff;
+            margin-bottom: 20px;
+            line-height: 1.8;
+        }
+        
+        .btn {
+            padding: 15px 35px;
+            background: linear-gradient(45deg, rgba(0, 255, 136, 0.2), rgba(0, 255, 255, 0.2));
+            border: 2px solid #00ff88;
+            color: #00ff88;
+            font-family: 'Courier New', monospace;
+            font-size: 1.1em;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s;
+            margin: 5px;
+        }
+        
+        .btn:hover {
+            background: rgba(0, 255, 136, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        #meet-container {
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        #jitsi-meet {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading">
+        <div class="spinner"></div>
+        <div class="loading-text">🎥 Connecting...</div>
+        <div class="loading-details" id="loading-details">Initializing...</div>
+    </div>
+    
+    <!-- Error Screen -->
+    <div id="error-container">
+        <div class="error-card">
+            <div class="error-icon">❌</div>
+            <div class="error-title">Connection Failed</div>
+            <div class="error-message" id="error-message"></div>
+            <div>
+                <a href="javascript:location.reload()" class="btn">🔄 Retry</a>
+                <a href="meeting-minutes-improved.html" class="btn">← Dashboard</a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Jitsi Meet Container -->
+    <div id="meet-container" style="display: none;">
+        <div id="jitsi-meet"></div>
+    </div>
+    
+    <!-- Jitsi External API -->
+    <script src='https://8x8.vc/vpaas-magic-cookie-1973ca4a9a4e43d08996769fb612e8f6/external_api.js'></script>
+    
+    <script>
+        // ✅ STORAGE FALLBACK
+        const StorageManager = {
+            _memory: {},
+            getItem(key) {
+                try {
+                    return localStorage.getItem(key) || sessionStorage.getItem(key) || this._memory[key] || null;
+                } catch (e) {
+                    return this._memory[key] || null;
+                }
+            },
+            setItem(key, value) {
+                try {
+                    localStorage.setItem(key, value);
+                } catch (e) {
+                    this._memory[key] = value;
+                }
+            }
+        };
+        
+        let jitsiApi = null;
+        
+        function updateStatus(msg) {
+            const el = document.getElementById('loading-details');
+            if (el) el.textContent = msg;
+            console.log('📝', msg);
+        }
+        
+        async function initJitsi() {
+            try {
+                updateStatus('Loading API config...');
+                await window.API_READY;
+                
+                updateStatus('Reading meeting ID...');
+                const meetingId = new URLSearchParams(window.location.search).get('meeting');
+                
+                if (!meetingId) {
+                    throw new Error('No meeting ID. Please start from dashboard.');
+                }
+                
+                const token = StorageManager.getItem('token');
+                if (!token) {
+                    throw new Error('Not logged in. Please login first.');
+                }
+                
+                updateStatus(`Loading meeting #${meetingId}...`);
+                
+                const response = await fetch(`${window.API_URL}/api/jitsi/meeting-url/${meetingId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to load meeting');
+                }
+                
+                const data = await response.json();
+                if (!data.success || !data.data.roomName || !data.data.token) {
+                    throw new Error('Invalid meeting configuration');
+                }
+                
+                const { roomName, token: jwtToken } = data.data;
+                
+                updateStatus('Connecting to video...');
+                
+                // Hide loading
+                setTimeout(() => {
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('meet-container').style.display = 'block';
+                }, 500);
+                
+                // Initialize Jitsi
+                const domain = '8x8.vc';
+                const fullRoom = `vpaas-magic-cookie-1973ca4a9a4e43d08996769fb612e8f6/${roomName}`;
+                
+                jitsiApi = new JitsiMeetExternalAPI(domain, {
+                    roomName: fullRoom,
+                    width: '100%',
+                    height: '100%',
+                    parentNode: document.querySelector('#jitsi-meet'),
+                    jwt: jwtToken,
+                    configOverwrite: {
+                        // ✅ CRITICAL: DISABLE LOBBY
+                        enableLobbyChat: false,
+                        lobbyEnabled: false,
+                        
+                        // ✅ DISABLE PREJOIN
+                        prejoinPageEnabled: false,
+                        prejoinConfig: { enabled: false },
+                        
+                        // ✅ AUTO JOIN
+                        startWithAudioMuted: false,
+                        startWithVideoMuted: false,
+                        enableWelcomePage: false,
+                        disableDeepLinking: true,
+                        
+                        // ✅ Security
+                        requireDisplayName: false,
+                        enableInsecureRoomNameWarning: false,
+                        
+                        // Performance
+                        resolution: 720,
+                        constraints: {
+                            video: {
+                                height: { ideal: 720, max: 1080, min: 360 }
+                            }
+                        }
+                    },
+                    interfaceConfigOverwrite: {
+                        TOOLBAR_BUTTONS: [
+                            'microphone', 'camera', 'desktop',
+                            'fullscreen', 'hangup', 'chat',
+                            'settings', 'videoquality', 'filmstrip'
+                        ],
+                        SHOW_JITSI_WATERMARK: false,
+                        SHOW_WATERMARK_FOR_GUESTS: false,
+                        SHOW_BRAND_WATERMARK: false,
+                        BRAND_WATERMARK_LINK: '',
+                        SHOW_POWERED_BY: false,
+                        DEFAULT_BACKGROUND: '#1a0a2e'
+                    }
+                });
+                
+                // Events
+                jitsiApi.addEventListener('videoConferenceJoined', (data) => {
+                    console.log('✅ Joined:', data);
+                });
+                
+                jitsiApi.addEventListener('videoConferenceLeft', () => {
+                    console.log('👋 Left meeting');
+                    setTimeout(() => window.close(), 500);
+                });
+                
+                jitsiApi.addEventListener('readyToClose', () => {
+                    window.close();
+                });
+                
+            } catch (error) {
+                console.error('❌ Error:', error);
+                showError(error.message);
+            }
+        }
+        
+        function showError(message) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('error-container').style.display = 'flex';
+            document.getElementById('error-message').textContent = message;
+        }
+        
+        // Cleanup
+        window.addEventListener('beforeunload', () => {
+            if (jitsiApi) {
+                try {
+                    jitsiApi.dispose();
+                } catch (e) {}
+            }
+        });
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', initJitsi);
+    </script>
+</body>
+</html>

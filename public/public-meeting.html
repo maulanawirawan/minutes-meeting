@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Join Meeting - naraMeet</title>
+    <script src="/api-config.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a0a2e 50%, #0f0f2a 100%);
+            color: #00ff88;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 600px;
+            width: 100%;
+            background: rgba(10, 10, 30, 0.9);
+            border: 2px solid #00ff88;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 0 30px rgba(0, 255, 136, 0.3);
+        }
+        
+        h1 {
+            font-size: 2.5em;
+            text-align: center;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #00ff88, #00ffff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #00ffff;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        
+        .meeting-info {
+            background: rgba(0, 255, 136, 0.1);
+            padding: 20px;
+            border-left: 4px solid #00ff88;
+            margin-bottom: 30px;
+            display: none;
+        }
+        
+        .meeting-info h2 {
+            color: #00ffff;
+            margin-bottom: 15px;
+        }
+        
+        .meeting-info p {
+            margin: 8px 0;
+            font-size: 1.1em;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        label {
+            display: block;
+            color: #00ff88;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+            font-weight: bold;
+        }
+        
+        input {
+            width: 100%;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid #00ff88;
+            color: #00ff88;
+            font-family: 'Courier New', monospace;
+            font-size: 1.1em;
+            border-radius: 5px;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: #00ffff;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(45deg, rgba(0, 255, 136, 0.2), rgba(0, 255, 255, 0.2));
+            border: 2px solid #00ff88;
+            color: #00ff88;
+            font-family: 'Courier New', monospace;
+            font-size: 1.2em;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .btn:hover {
+            background: rgba(0, 255, 136, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 255, 136, 0.5);
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .status {
+            text-align: center;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+            display: none;
+        }
+        
+        .status.success {
+            background: rgba(0, 255, 136, 0.2);
+            border: 2px solid #00ff88;
+        }
+        
+        .status.error {
+            background: rgba(255, 0, 102, 0.2);
+            border: 2px solid #ff0066;
+            color: #ff0066;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0, 255, 136, 0.3);
+            border-top-color: #00ff88;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎥 Join Meeting</h1>
+        <div class="subtitle">naraMeet Guest Access</div>
+        
+        <div class="meeting-info" id="meetingInfo">
+            <h2>Meeting Details</h2>
+            <p><strong>Title:</strong> <span id="meetingTitle">-</span></p>
+            <p><strong>Date:</strong> <span id="meetingDate">-</span></p>
+            <p><strong>Status:</strong> <span id="meetingStatus">-</span></p>
+        </div>
+        
+        <div class="form-group">
+            <label for="guestName">Your Name</label>
+            <input type="text" id="guestName" placeholder="Enter your name" required />
+        </div>
+        
+        <div class="form-group">
+            <label for="guestEmail">Email (Optional)</label>
+            <input type="email" id="guestEmail" placeholder="your@email.com" />
+        </div>
+        
+        <button class="btn" onclick="joinMeeting()" id="joinBtn">
+            Join Meeting
+        </button>
+        
+        <div class="status" id="status"></div>
+    </div>
+    
+    <script>
+        let meetingId = null;
+        let meetingData = null;
+        
+        function showStatus(message, type = 'success') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+            status.style.display = 'block';
+        }
+        
+        async function loadMeetingInfo() {
+            try {
+                await window.API_READY;
+                
+                const urlParams = new URLSearchParams(window.location.search);
+                meetingId = urlParams.get('meeting');
+                
+                if (!meetingId) {
+                    showStatus('❌ Invalid meeting link', 'error');
+                    return;
+                }
+                
+                showStatus('Loading meeting info...');
+                
+                const response = await fetch(`${window.API_URL}/api/public/meeting/${meetingId}`);
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.error || 'Failed to load meeting');
+                }
+                
+                meetingData = data.data;
+                
+                // Display meeting info
+                document.getElementById('meetingTitle').textContent = meetingData.title || 'Untitled';
+                document.getElementById('meetingDate').textContent = new Date(meetingData.date).toLocaleString();
+                document.getElementById('meetingStatus').textContent = meetingData.status;
+                document.getElementById('meetingInfo').style.display = 'block';
+                
+                document.getElementById('status').style.display = 'none';
+                
+            } catch (error) {
+                console.error('Load meeting error:', error);
+                showStatus(`❌ ${error.message}`, 'error');
+            }
+        }
+        
+        async function joinMeeting() {
+            const guestName = document.getElementById('guestName').value.trim();
+            
+            if (!guestName) {
+                showStatus('❌ Please enter your name', 'error');
+                return;
+            }
+            
+            if (!meetingId) {
+                showStatus('❌ Invalid meeting', 'error');
+                return;
+            }
+            
+            try {
+                const joinBtn = document.getElementById('joinBtn');
+                joinBtn.disabled = true;
+                joinBtn.innerHTML = '<span class="loading"></span> Connecting...';
+                
+                const guestEmail = document.getElementById('guestEmail').value.trim();
+                
+                const response = await fetch(
+                    `${window.API_URL}/api/public/jitsi/${meetingId}?guest_name=${encodeURIComponent(guestName)}&guest_email=${encodeURIComponent(guestEmail)}`
+                );
+                
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.error || 'Failed to join meeting');
+                }
+                
+                // Redirect to Jitsi meeting
+                showStatus('✅ Redirecting to meeting...');
+                
+                setTimeout(() => {
+                    window.location.href = data.data.url;
+                }, 1000);
+                
+            } catch (error) {
+                console.error('Join meeting error:', error);
+                showStatus(`❌ ${error.message}`, 'error');
+                
+                const joinBtn = document.getElementById('joinBtn');
+                joinBtn.disabled = false;
+                joinBtn.textContent = 'Join Meeting';
+            }
+        }
+        
+        // Enter key to join
+        document.getElementById('guestName').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') joinMeeting();
+        });
+        
+        document.getElementById('guestEmail').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') joinMeeting();
+        });
+        
+        // Load meeting info on page load
+        document.addEventListener('DOMContentLoaded', loadMeetingInfo);
+    </script>
+</body>
+</html>
