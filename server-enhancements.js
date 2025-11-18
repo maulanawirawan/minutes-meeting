@@ -200,12 +200,104 @@ async function transcribeWithAssemblyAIEnhanced(filePath, language = 'id', enabl
         console.log(`🔖 Transcript ID: ${transcript.id}`);
 
         // 🔍 DEBUG: Check what AI features were returned
-        console.log('🔍 AI Features Check:');
-        console.log(`   - Highlights: ${transcript.auto_highlights_result ? 'YES ✅' : 'NO ❌'}`);
-        console.log(`   - Sentiment: ${transcript.sentiment_analysis_results ? 'YES ✅' : 'NO ❌'}`);
-        console.log(`   - Entities: ${transcript.entities ? 'YES ✅' : 'NO ❌'}`);
-        console.log(`   - Chapters: ${transcript.chapters ? 'YES ✅' : 'NO ❌'}`);
-        console.log(`   - Utterances: ${transcript.utterances?.length || 0} utterances`);
+        console.log('╔════════════════════════════════════════════════════════════╗');
+        console.log('║          🔍 DETAILED AssemblyAI RESPONSE DEBUG            ║');
+        console.log('╚════════════════════════════════════════════════════════════╝');
+
+        // Highlights
+        console.log('\n📌 AUTO HIGHLIGHTS:');
+        if (transcript.auto_highlights_result) {
+            const highlightsCount = transcript.auto_highlights_result.results?.length || 0;
+            console.log(`   ✅ Status: RETURNED`);
+            console.log(`   📊 Count: ${highlightsCount} highlights`);
+            if (highlightsCount > 0) {
+                console.log(`   📝 Sample (first 3):`);
+                transcript.auto_highlights_result.results.slice(0, 3).forEach((h, i) => {
+                    console.log(`      ${i + 1}. "${h.text}" (count: ${h.count}, rank: ${h.rank})`);
+                });
+            } else {
+                console.log(`   ⚠️  Array exists but empty!`);
+            }
+        } else {
+            console.log(`   ❌ NOT RETURNED (will use fallback)`);
+        }
+
+        // Sentiment
+        console.log('\n💭 SENTIMENT ANALYSIS:');
+        if (transcript.sentiment_analysis_results) {
+            const sentimentCount = transcript.sentiment_analysis_results.length || 0;
+            console.log(`   ✅ Status: RETURNED`);
+            console.log(`   📊 Count: ${sentimentCount} sentiment segments`);
+            if (sentimentCount > 0) {
+                const positive = transcript.sentiment_analysis_results.filter(s => s.sentiment === 'POSITIVE').length;
+                const negative = transcript.sentiment_analysis_results.filter(s => s.sentiment === 'NEGATIVE').length;
+                const neutral = transcript.sentiment_analysis_results.filter(s => s.sentiment === 'NEUTRAL').length;
+                console.log(`   📈 Breakdown: ${positive} positive, ${neutral} neutral, ${negative} negative`);
+                console.log(`   📝 Sample (first 2):`);
+                transcript.sentiment_analysis_results.slice(0, 2).forEach((s, i) => {
+                    console.log(`      ${i + 1}. ${s.sentiment} (confidence: ${s.confidence}, text: "${s.text?.substring(0, 50)}...")`);
+                });
+            }
+        } else {
+            console.log(`   ❌ NOT RETURNED`);
+        }
+
+        // Entities
+        console.log('\n🏷️  ENTITY DETECTION:');
+        if (transcript.entities) {
+            const entitiesCount = transcript.entities.length || 0;
+            console.log(`   ✅ Status: RETURNED`);
+            console.log(`   📊 Count: ${entitiesCount} entities detected`);
+            if (entitiesCount > 0) {
+                const entityTypes = {};
+                transcript.entities.forEach(e => {
+                    entityTypes[e.entity_type] = (entityTypes[e.entity_type] || 0) + 1;
+                });
+                console.log(`   📈 Types breakdown:`, JSON.stringify(entityTypes, null, 2));
+                console.log(`   📝 Sample (first 5):`);
+                transcript.entities.slice(0, 5).forEach((e, i) => {
+                    console.log(`      ${i + 1}. [${e.entity_type}] "${e.text}"`);
+                });
+            }
+        } else {
+            console.log(`   ❌ NOT RETURNED`);
+        }
+
+        // Chapters
+        console.log('\n📖 AUTO CHAPTERS:');
+        if (transcript.chapters) {
+            const chaptersCount = transcript.chapters.length || 0;
+            console.log(`   ✅ Status: RETURNED`);
+            console.log(`   📊 Count: ${chaptersCount} chapters`);
+            if (chaptersCount > 0) {
+                console.log(`   📝 Sample (first 3):`);
+                transcript.chapters.slice(0, 3).forEach((c, i) => {
+                    console.log(`      ${i + 1}. "${c.headline}" (${c.start}-${c.end}ms)`);
+                    console.log(`         Summary: ${c.summary?.substring(0, 60)}...`);
+                });
+            } else {
+                console.log(`   ⚠️  Array exists but empty!`);
+            }
+        } else {
+            console.log(`   ❌ NOT RETURNED (will use fallback)`);
+        }
+
+        // Utterances
+        console.log('\n🎤 UTTERANCES (Speaker Diarization):');
+        const utterancesCount = transcript.utterances?.length || 0;
+        console.log(`   📊 Count: ${utterancesCount} utterances`);
+        if (utterancesCount > 0) {
+            const speakers = new Set(transcript.utterances.map(u => u.speaker));
+            console.log(`   👥 Unique speakers: ${speakers.size}`);
+            console.log(`   📝 Sample (first 2):`);
+            transcript.utterances.slice(0, 2).forEach((u, i) => {
+                console.log(`      ${i + 1}. Speaker ${u.speaker}: "${u.text.substring(0, 60)}..."`);
+            });
+        }
+
+        console.log('\n╔════════════════════════════════════════════════════════════╗');
+        console.log('║                    END DEBUG REPORT                        ║');
+        console.log('╚════════════════════════════════════════════════════════════╝\n');
 
         if (transcript.status === 'error') {
             throw new Error(`Transcription failed: ${transcript.error}`);
