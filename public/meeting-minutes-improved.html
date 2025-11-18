@@ -4087,24 +4087,50 @@
 
         let currentAudioFileId = null;
         let currentAudioUrl = null;
-        
-        function showAudioPlayback(audioFile) {
+        let currentAudioBlob = null;
+
+        async function showAudioPlayback(audioFile) {
             const card = document.getElementById('audioPlaybackCard');
             const player = document.getElementById('audioPlayer');
             const fileName = document.getElementById('audioFileName');
             const fileInfo = document.getElementById('audioFileInfo');
-            
+
             currentAudioFileId = audioFile.id;
-            currentAudioUrl = `${window.API_URL}/api/audio/${audioFile.id}/download`;
-            
-            player.src = currentAudioUrl;
-            fileName.textContent = audioFile.original_filename || audioFile.filename;
-            
-            const sizeMB = (audioFile.file_size / (1024 * 1024)).toFixed(2);
-            const duration = audioFile.duration ? formatDuration(audioFile.duration) : 'Unknown';
-            fileInfo.textContent = `Duration: ${duration} | Size: ${sizeMB} MB`;
-            
-            card.style.display = 'block';
+
+            try {
+                // Fetch audio with authentication token
+                const token = localStorage.getItem('token');
+                const response = await fetch(`${window.API_URL}/api/audio/${audioFile.id}/download`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Failed to load audio: ${response.statusText}`);
+                }
+
+                // Convert to blob and create object URL
+                currentAudioBlob = await response.blob();
+                currentAudioUrl = URL.createObjectURL(currentAudioBlob);
+
+                // Clean up old blob URL if exists
+                if (player.src && player.src.startsWith('blob:')) {
+                    URL.revokeObjectURL(player.src);
+                }
+
+                player.src = currentAudioUrl;
+                fileName.textContent = audioFile.original_filename || audioFile.filename;
+
+                const sizeMB = (audioFile.file_size / (1024 * 1024)).toFixed(2);
+                const duration = audioFile.duration ? formatDuration(audioFile.duration) : 'Unknown';
+                fileInfo.textContent = `Duration: ${duration} | Size: ${sizeMB} MB`;
+
+                card.style.display = 'block';
+            } catch (error) {
+                console.error('Audio playback error:', error);
+                showNotification('Failed to load audio file', 'error');
+            }
         }
         
         function formatDuration(seconds) {
@@ -4113,33 +4139,85 @@
             return `${mins}:${secs.toString().padStart(2, '0')}`;
         }
         
-        function downloadAudio() {
-            if (!currentAudioUrl) return;
-            
-            const a = document.createElement('a');
-            a.href = currentAudioUrl;
-            a.download = document.getElementById('audioFileName').textContent;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
+        async function downloadAudio() {
+            if (!currentAudioFileId) return;
+
+            try {
+                // If we already have the blob, use it
+                if (currentAudioBlob) {
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(currentAudioBlob);
+                    a.download = document.getElementById('audioFileName').textContent;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    setTimeout(() => URL.revokeObjectURL(a.href), 100);
+                } else {
+                    // Otherwise fetch with token
+                    const token = localStorage.getItem('token');
+                    const response = await fetch(`${window.API_URL}/api/audio/${currentAudioFileId}/download`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Failed to download audio: ${response.statusText}`);
+                    }
+
+                    const blob = await response.blob();
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = document.getElementById('audioFileName').textContent;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    setTimeout(() => URL.revokeObjectURL(url), 100);
+                }
+            } catch (error) {
+                console.error('Download error:', error);
+                showNotification('Failed to download audio file', 'error');
+            }
         }
         
         async function deleteAudio() {
             if (!currentAudioFileId) return;
-            
+
             if (!confirm('Delete this audio file?')) return;
-            
+
             try {
                 await apiRequest(`/api/audio/${currentAudioFileId}`, {
                     method: 'DELETE'
                 });
-                
+
+                // Cleanup blob URL
+                const player = document.getElementById('audioPlayer');
+                if (player.src && player.src.startsWith('blob:')) {
+                    URL.revokeObjectURL(player.src);
+                }
+                player.src = '';
+                currentAudioBlob = null;
+                currentAudioUrl = null;
+                currentAudioFileId = null;
+
                 document.getElementById('audioPlaybackCard').style.display = 'none';
                 showStatus('✅ Audio deleted', 'success');
+
+                // Reload meeting data
+                await loadMeetingData();
             } catch (error) {
                 showStatus(`❌ ${error.message}`, 'error');
             }
         }
+
+        // Cleanup blob URLs on page unload to prevent memory leaks
+        window.addEventListener('beforeunload', () => {
+            const player = document.getElementById('audioPlayer');
+            if (player && player.src && player.src.startsWith('blob:')) {
+                URL.revokeObjectURL(player.src);
+            }
+        });
 
         
         let audioContext = null;
