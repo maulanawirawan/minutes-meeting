@@ -112,6 +112,14 @@ async function transcribeWithAssemblyAIEnhanced(filePath, language = 'id', enabl
         console.log(`📝 Text length: ${transcript.text?.length || 0} characters`);
         console.log(`🔖 Transcript ID: ${transcript.id}`);
 
+        // 🔍 DEBUG: Check what AI features were returned
+        console.log('🔍 AI Features Check:');
+        console.log(`   - Highlights: ${transcript.auto_highlights_result ? 'YES ✅' : 'NO ❌'}`);
+        console.log(`   - Sentiment: ${transcript.sentiment_analysis_results ? 'YES ✅' : 'NO ❌'}`);
+        console.log(`   - Entities: ${transcript.entities ? 'YES ✅' : 'NO ❌'}`);
+        console.log(`   - Chapters: ${transcript.chapters ? 'YES ✅' : 'NO ❌'}`);
+        console.log(`   - Utterances: ${transcript.utterances?.length || 0} utterances`);
+
         if (transcript.status === 'error') {
             throw new Error(`Transcription failed: ${transcript.error}`);
         }
@@ -131,8 +139,17 @@ async function transcribeWithAssemblyAIEnhanced(filePath, language = 'id', enabl
             console.log(`💾 Stored AssemblyAI Transcript ID: ${transcript.id}`);
         }
 
+        // 🗑️ CLEAR OLD DATA - Delete previous highlights, entities, chapters for this meeting
+        if (meetingId) {
+            console.log('🗑️ Clearing old AI data for meeting...');
+            await query('DELETE FROM meeting_highlights WHERE meeting_id = $1', [meetingId]);
+            await query('DELETE FROM meeting_entities WHERE meeting_id = $1', [meetingId]);
+            await query('DELETE FROM meeting_chapters WHERE meeting_id = $1', [meetingId]);
+            console.log('✅ Old data cleared');
+        }
+
         // ✅ SAVE HIGHLIGHTS to database
-        if (transcript.auto_highlights_result && transcript.auto_highlights_result.results) {
+        if (transcript.auto_highlights_result && transcript.auto_highlights_result.results && transcript.auto_highlights_result.results.length > 0) {
             console.log(`✨ Auto highlights detected: ${transcript.auto_highlights_result.results.length} highlights`);
 
             for (const highlight of transcript.auto_highlights_result.results) {
@@ -148,6 +165,8 @@ async function transcribeWithAssemblyAIEnhanced(filePath, language = 'id', enabl
                     ]
                 );
             }
+        } else {
+            console.log(`⚠️ No highlights returned by AssemblyAI (audio may be too short or lack significant content)`);
         }
 
         // ✅ SAVE ENTITIES to database
@@ -167,6 +186,8 @@ async function transcribeWithAssemblyAIEnhanced(filePath, language = 'id', enabl
                     ]
                 );
             }
+        } else {
+            console.log(`⚠️ No entities returned by AssemblyAI`);
         }
 
         // ✅ SAVE CHAPTERS to database
@@ -189,6 +210,8 @@ async function transcribeWithAssemblyAIEnhanced(filePath, language = 'id', enabl
                     ]
                 );
             }
+        } else {
+            console.log(`⚠️ No chapters returned by AssemblyAI (audio may be too short)`);
         }
 
         // ✅ PROCESS UTTERANCES with SENTIMENT
