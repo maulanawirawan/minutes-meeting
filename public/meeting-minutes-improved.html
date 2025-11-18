@@ -3086,13 +3086,19 @@
                         showAudioPlayback(audioFile);
                     }
 
+                    // ✅ Load AI features after transcription
+                    await loadHighlights(currentMeeting.id);
+                    await loadSentiment(currentMeeting.id);
+                    await loadEntities(currentMeeting.id);
+                    await loadChapters(currentMeeting.id);
+
                     // Auto-generate summary if enabled
                     if (document.getElementById('autoSummaryGeneration').checked) {
                         setTimeout(() => {
                             generateAISummary();
                         }, 2000);
                     }
-                    
+
                     setTimeout(() => {
                         document.querySelector('.tab-btn:nth-child(3)').click();
                     }, 1000);
@@ -3150,14 +3156,20 @@
                     transcript = data.transcript;
                     displayTranscript();
                     showStatus(`✅ Transcription complete! (${transcript.length} segments)`, 'success');
-                    
+
+                    // ✅ Load AI features after transcription
+                    await loadHighlights(currentMeeting.id);
+                    await loadSentiment(currentMeeting.id);
+                    await loadEntities(currentMeeting.id);
+                    await loadChapters(currentMeeting.id);
+
                     // Auto-generate summary if enabled
                     if (document.getElementById('autoSummaryGeneration').checked) {
                         setTimeout(() => {
                             generateAISummary();
                         }, 2000);
                     }
-                    
+
                     setTimeout(() => {
                         document.querySelector('.tab-btn:nth-child(3)').click();
                     }, 1000);
