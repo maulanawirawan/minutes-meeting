@@ -13,6 +13,93 @@
 const fs = require('fs');
 const path = require('path');
 
+// ================================================================
+// 🔧 HELPER FUNCTIONS: Generate Highlights & Chapters
+// ================================================================
+
+/**
+ * 🔄 FALLBACK: Generate highlights dari entities
+ * Digunakan ketika AssemblyAI tidak mengembalikan highlights (bahasa non-English)
+ */
+async function generateHighlightsFromEntities(entities, fullText) {
+    const highlights = [];
+    const entityCount = {};
+
+    // Count entity occurrences
+    entities.forEach(entity => {
+        const text = entity.text.toLowerCase();
+        entityCount[text] = (entityCount[text] || 0) + 1;
+    });
+
+    // Convert to highlights format, ambil top 10
+    const sortedEntities = Object.entries(entityCount)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10);
+
+    sortedEntities.forEach(([text, count], index) => {
+        // Calculate rank based on frequency
+        const maxCount = sortedEntities[0][1];
+        const rank = count / maxCount;
+
+        highlights.push({
+            text: text.charAt(0).toUpperCase() + text.slice(1), // Capitalize first letter
+            count: count,
+            rank: rank,
+            timestamps: [] // We don't have exact timestamps for entities
+        });
+    });
+
+    return highlights;
+}
+
+/**
+ * 🔄 FALLBACK: Generate chapters dari utterances
+ * Membagi meeting menjadi chapters berdasarkan durasi dan topic changes
+ */
+async function generateChaptersFromUtterances(utterances, fullText) {
+    const chapters = [];
+    const CHAPTER_DURATION_MS = 10 * 60 * 1000; // 10 menit per chapter
+
+    if (!utterances || utterances.length === 0) {
+        return chapters;
+    }
+
+    const totalDuration = utterances[utterances.length - 1].end;
+    const numChapters = Math.min(Math.ceil(totalDuration / CHAPTER_DURATION_MS), 8); // Max 8 chapters
+
+    for (let i = 0; i < numChapters; i++) {
+        const startTime = i * CHAPTER_DURATION_MS;
+        const endTime = Math.min((i + 1) * CHAPTER_DURATION_MS, totalDuration);
+
+        // Get utterances in this time range
+        const chapterUtterances = utterances.filter(u => u.start >= startTime && u.end <= endTime);
+
+        if (chapterUtterances.length === 0) continue;
+
+        // Extract first few words as headline
+        const firstSentence = chapterUtterances[0].text.split('.')[0].trim();
+        const headline = firstSentence.length > 80
+            ? firstSentence.substring(0, 77) + '...'
+            : firstSentence;
+
+        // Create summary from first 2-3 utterances
+        const summaryText = chapterUtterances.slice(0, 3)
+            .map(u => u.text)
+            .join(' ')
+            .substring(0, 300);
+
+        chapters.push({
+            headline: headline || `Bagian ${i + 1}`,
+            summary: summaryText || 'Pembahasan berlanjut...',
+            gist: `Menit ${Math.floor(startTime / 60000)}-${Math.floor(endTime / 60000)}`,
+            start: startTime,
+            end: endTime
+        });
+    }
+
+    return chapters;
+}
+
 /**
  * ✅ ENHANCED: Transcribe dengan fitur lengkap AssemblyAI
  * Tambahkan ini sebagai replacement atau update fungsi transcribeWithAssemblyAI
@@ -167,6 +254,27 @@ async function transcribeWithAssemblyAIEnhanced(filePath, language = 'id', enabl
             }
         } else {
             console.log(`⚠️ No highlights returned by AssemblyAI (audio may be too short or lack significant content)`);
+
+            // 🔄 FALLBACK: Generate highlights dari entities dan frequent words
+            if (transcript.entities && transcript.entities.length > 0 && meetingId) {
+                console.log('🔄 Generating highlights from entities...');
+                const generatedHighlights = await generateHighlightsFromEntities(transcript.entities, transcript.text);
+
+                for (const highlight of generatedHighlights) {
+                    await query(
+                        `INSERT INTO meeting_highlights (meeting_id, text, count, rank, timestamps)
+                         VALUES ($1, $2, $3, $4, $5)`,
+                        [
+                            meetingId,
+                            highlight.text,
+                            highlight.count,
+                            highlight.rank,
+                            JSON.stringify(highlight.timestamps || [])
+                        ]
+                    );
+                }
+                console.log(`✅ Generated ${generatedHighlights.length} highlights from entities`);
+            }
         }
 
         // ✅ SAVE ENTITIES to database
@@ -212,6 +320,30 @@ async function transcribeWithAssemblyAIEnhanced(filePath, language = 'id', enabl
             }
         } else {
             console.log(`⚠️ No chapters returned by AssemblyAI (audio may be too short)`);
+
+            // 🔄 FALLBACK: Generate chapters dari timestamps
+            if (transcript.utterances && transcript.utterances.length > 0 && meetingId) {
+                console.log('🔄 Generating chapters from timestamps...');
+                const generatedChapters = await generateChaptersFromUtterances(transcript.utterances, transcript.text);
+
+                let chapterIndex = 0;
+                for (const chapter of generatedChapters) {
+                    await query(
+                        `INSERT INTO meeting_chapters (meeting_id, headline, summary, gist, start_time, end_time, sequence_number)
+                         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+                        [
+                            meetingId,
+                            chapter.headline,
+                            chapter.summary,
+                            chapter.gist,
+                            chapter.start,
+                            chapter.end,
+                            chapterIndex++
+                        ]
+                    );
+                }
+                console.log(`✅ Generated ${generatedChapters.length} chapters from timestamps`);
+            }
         }
 
         // ✅ PROCESS UTTERANCES with SENTIMENT
