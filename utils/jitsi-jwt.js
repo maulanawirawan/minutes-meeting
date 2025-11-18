@@ -10,7 +10,7 @@ function generateJitsiToken(options) {
             userEmail = '',
             userAvatar = '',
             isModerator = false,
-            expiresIn = 7200
+            expiresIn = 86400  // 24 hours (was 7200 = 2 hours) - FIX for mobile
         } = options;
 
         if (!roomName || !userName) {

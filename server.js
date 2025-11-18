@@ -2830,6 +2830,80 @@ app.post('/api/jitsi/quick-meeting', authMiddleware, async (req, res) => {
     }
 });
 
+/**
+ * 🚪 GUEST ACCESS: Join meeting without login
+ * Usage: /api/jitsi/guest-join/:meetingId?name=GuestName
+ */
+app.get('/api/jitsi/guest-join/:meetingId', async (req, res) => {
+    try {
+        const { meetingId } = req.params;
+        const { name } = req.query;
+
+        console.log(`🚪 Guest attempting to join meeting ${meetingId}`);
+
+        // Get meeting info
+        const meeting = await queryOne(
+            'SELECT * FROM meetings WHERE id = $1 AND deleted_at IS NULL',
+            [meetingId]
+        );
+
+        if (!meeting) {
+            return res.status(404).json({
+                success: false,
+                error: 'Meeting not found'
+            });
+        }
+
+        // Check if meeting allows guests
+        if (meeting.status === 'cancelled') {
+            return res.status(403).json({
+                success: false,
+                error: 'Meeting has been cancelled'
+            });
+        }
+
+        // Get or create room name
+        let roomName = meeting.jitsi_room_name;
+
+        if (!roomName) {
+            roomName = `narameet-${meetingId}-${Date.now()}`;
+
+            await query(
+                'UPDATE meetings SET jitsi_room_name = $1 WHERE id = $2',
+                [roomName, meetingId]
+            );
+        }
+
+        const guestName = name || `Guest ${Date.now().toString().slice(-4)}`;
+
+        console.log(`✅ Guest "${guestName}" joining room: "${roomName}"`);
+
+        // Generate URL for guest (NOT moderator)
+        const meetingUrl = generateMeetingUrl(
+            roomName,
+            guestName,
+            {
+                userEmail: null,
+                isModerator: false  // Guests are NOT moderators
+            }
+        );
+
+        console.log(`✅ Guest URL generated successfully`);
+
+        res.json({
+            success: true,
+            data: meetingUrl
+        });
+
+    } catch (error) {
+        console.error('❌ Guest join error:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
 console.log('🎥 Jitsi Meeting endpoints registered');
 
 
