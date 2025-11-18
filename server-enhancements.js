@@ -837,12 +837,29 @@ function setupEnhancements(app, assemblyClient, authMiddleware, query, queryOne)
         try {
             const { id } = req.params;
 
+            console.log(`🏷️  Fetching entities for meeting ${id}...`);
+
             const entities = await query(
                 `SELECT * FROM meeting_entities
                  WHERE meeting_id = $1 AND deleted_at IS NULL
                  ORDER BY entity_type, text`,
                 [id]
             );
+
+            console.log(`   📊 Found ${entities.rows.length} entities in database`);
+
+            if (entities.rows.length > 0) {
+                // Count by type
+                const byType = {};
+                entities.rows.forEach(e => {
+                    byType[e.entity_type] = (byType[e.entity_type] || 0) + 1;
+                });
+                console.log(`   📈 Breakdown by type:`, JSON.stringify(byType));
+                console.log(`   📝 Sample (first 3):`, entities.rows.slice(0, 3).map(e => `[${e.entity_type}] ${e.text}`));
+            } else {
+                console.log(`   ⚠️  No entities found in database for this meeting!`);
+                console.log(`   💡 Tip: Entities are only saved during NEW transcriptions. Try re-uploading audio.`);
+            }
 
             res.json({
                 success: true,
@@ -893,6 +910,8 @@ function setupEnhancements(app, assemblyClient, authMiddleware, query, queryOne)
         try {
             const { id } = req.params;
 
+            console.log(`📊 Fetching sentiment data for meeting ${id}...`);
+
             const sentimentStats = await query(
                 `SELECT
                     COUNT(*) as total_segments,
@@ -917,11 +936,16 @@ function setupEnhancements(app, assemblyClient, authMiddleware, query, queryOne)
                 [id]
             );
 
+            const stats = sentimentStats.rows[0];
+            console.log(`   📈 Sentiment stats: ${stats.positive_count} positive, ${stats.neutral_count} neutral, ${stats.negative_count} negative`);
+            console.log(`   📝 Transcript segments: ${transcripts.rows.length}`);
+
+            // ✅ FIX: Change field names to match frontend expectations
             res.json({
                 success: true,
                 data: {
-                    statistics: sentimentStats.rows[0],
-                    transcripts: transcripts.rows
+                    overview: stats,           // ← FIXED: was "statistics"
+                    segments: transcripts.rows  // ← FIXED: was "transcripts"
                 }
             });
 
