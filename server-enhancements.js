@@ -80,8 +80,32 @@ async function transcribeWithAssemblyAIEnhanced(filePath, language = 'id', enabl
 
         console.log('📤 Enhanced transcription options:', JSON.stringify(transcriptionOptions, null, 2));
 
-        // Upload and transcribe
-        const transcript = await assemblyClient.transcripts.transcribe(transcriptionOptions);
+        // Upload and transcribe with retry logic
+        let transcript;
+        let retries = 3;
+        let lastError;
+
+        for (let attempt = 1; attempt <= retries; attempt++) {
+            try {
+                console.log(`🔄 Transcription attempt ${attempt}/${retries}...`);
+                transcript = await assemblyClient.transcripts.transcribe(transcriptionOptions);
+                console.log('✅ AssemblyAI transcription completed');
+                break; // Success, exit retry loop
+            } catch (error) {
+                lastError = error;
+                console.error(`❌ Attempt ${attempt} failed:`, error.message);
+
+                if (attempt < retries) {
+                    const waitTime = attempt * 2000; // 2s, 4s
+                    console.log(`⏳ Waiting ${waitTime/1000}s before retry...`);
+                    await new Promise(resolve => setTimeout(resolve, waitTime));
+                }
+            }
+        }
+
+        if (!transcript) {
+            throw lastError || new Error('Transcription failed after retries');
+        }
 
         console.log('✅ AssemblyAI transcription completed');
         console.log(`📊 Status: ${transcript.status}`);
