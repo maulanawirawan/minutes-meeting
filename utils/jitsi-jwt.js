@@ -60,10 +60,16 @@ function generateJitsiToken(options) {
             }
         };
 
+        // Extract just the key ID suffix from JITSI_KID
+        // Example: "vpaas-magic-cookie-xxx/5e9a6e" -> "5e9a6e"
+        const kidValue = process.env.JITSI_KID
+            ? process.env.JITSI_KID.split('/').pop()  // Get last part after '/'
+            : appId;
+
         const token = jwt.sign(payload, privateKey, {
             algorithm: 'RS256',
             header: {
-                kid: process.env.JITSI_KID || appId,
+                kid: kidValue,
                 typ: 'JWT',
                 alg: 'RS256'
             }
