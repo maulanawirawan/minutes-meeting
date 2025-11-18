@@ -1456,19 +1456,22 @@ app.post('/api/transcribe', authMiddleware, upload.single('audio'), async (req, 
         }
 
         // ✅ Transcribe with AssemblyAI + KEYTERMS (UPDATED!)
-        const transcriptSegments = await transcribeWithAssemblyAI(
+        const transcriptionResult = await transcribeWithAssemblyAI(
             enhancedFilePath,
             language,
             enable_diarization === 'true',
             meeting_id
         );
-        
+
+        // Extract segments from the result object
+        const transcriptSegments = transcriptionResult.segments || [];
+
         console.log(`✅ Transcription complete: ${transcriptSegments.length} segments`);
-        
+
         if (transcriptSegments.length === 0) {
             throw new Error('No transcript generated - audio may be empty or corrupted');
         }
-        
+
         // Save transcript segments to database
         let savedTranscripts = [];
         for (let i = 0; i < transcriptSegments.length; i++) {
