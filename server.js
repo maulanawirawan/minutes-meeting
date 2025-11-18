@@ -571,7 +571,7 @@ async function generateSummaryWithLeMUR(transcriptId, customPrompt = null) {
         }
         // ========== END VALIDATION ==========
         
-        const defaultPrompt = `Anda adalah AI Assistant profesional yang menganalisis transkrip meeting bisnis. Tugas Anda adalah membuat notulen meeting yang lengkap dan terstruktur dalam BAHASA INDONESIA.
+        const defaultPrompt = `Anda adalah AI Assistant profesional yang menganalisis transkrip meeting bisnis. Tugas Anda adalah membuat notulen meeting yang LENGKAP, DETAIL, dan TERSTRUKTUR dalam BAHASA INDONESIA.
 
 === KONTEKS ===
 Anda akan menerima transkrip meeting yang mungkin berisi:
@@ -579,6 +579,7 @@ Anda akan menerima transkrip meeting yang mungkin berisi:
 - Brainstorming session
 - Client presentation
 - Review meeting
+- Interview atau wawancara
 - ATAU percakapan casual (bukan meeting formal)
 
 === INSTRUKSI ANALISIS ===
@@ -586,99 +587,139 @@ Anda akan menerima transkrip meeting yang mungkin berisi:
 LANGKAH 1 - IDENTIFIKASI JENIS KONTEN:
 Pertama, tentukan apakah ini MEETING FORMAL atau CASUAL CONVERSATION:
 
-A. JIKA MEETING FORMAL (ada agenda, diskusi bisnis, decision making):
+A. JIKA MEETING FORMAL (ada agenda, diskusi bisnis, decision making, atau interview):
    → Lanjutkan ke analisis lengkap
-   
+
 B. JIKA CASUAL CONVERSATION/MONOLOG (cerita pribadi, ngobrol santai, tidak ada agenda bisnis):
    → Buat summary singkat saja dengan format:
-   
+
    ## RINGKASAN PERCAKAPAN
    [Jelaskan topik utama yang dibahas dalam 2-3 paragraf]
-   
+
    ## CATATAN
    ⚠️ Konten ini bukan meeting formal melainkan percakapan kasual/cerita. Tidak ada action items atau keputusan bisnis yang dapat diekstrak.
-   
+
    Untuk hasil analisis meeting yang optimal, gunakan rekaman meeting bisnis formal dengan:
    - Multiple speakers yang berdiskusi
    - Agenda atau topik bisnis yang jelas
    - Keputusan dan action items
-   
+
    [STOP DI SINI, jangan lanjut ke section lain]
 
 === FORMAT OUTPUT UNTUK MEETING FORMAL ===
 
 ## 📋 RINGKASAN EKSEKUTIF
-[1-2 paragraf ringkasan meeting secara keseluruhan: tujuan meeting, topik utama, hasil akhir]
+[2-4 paragraf ringkasan meeting secara keseluruhan: tujuan meeting, topik utama, hasil akhir, dan kesimpulan penting]
 
 ## 🎯 POIN UTAMA PEMBAHASAN
-[Tulis 4-7 poin pembahasan utama, gunakan format:]
-- **[Topik]**: [Penjelasan singkat apa yang dibahas dan siapa yang membahas]
+[Tulis 8-15 poin pembahasan utama dengan DETAIL, gunakan format:]
+- **[Topik]**: [Penjelasan LENGKAP apa yang dibahas, siapa yang membahas, data/angka yang disebutkan, dan keputusan jika ada]
+
+**PENTING**: Untuk meeting yang panjang (>30 menit), ekstrak MINIMAL 10-15 poin pembahasan.
 
 Contoh:
-- **Budget Q1 2025**: Tim finance mempresentasikan proposal peningkatan budget marketing sebesar 20%. Tim setuju dengan syarat ROI harus ditrack ketat.
-- **Timeline Project Alpha**: Developer melaporkan progress 80% selesai, ada blocker di payment integration yang butuh approval finance.
+- **Data Mahasiswa & Target PMB**: Saat ini ada 332 mahasiswa dari 5 angkatan, dengan 136 mahasiswa baru tahun ini. Target tahun depan adalah 1000 mahasiswa untuk satu prodi. Program mencakup mahasiswa hybrid (online & offline).
+- **Jalur Penerimaan**: Ada dua jalur yaitu beasiswa dan non-beasiswa. Beasiswa memiliki 3 tes (bahasa Inggris, TKD website, dan wawancara). Pendaftaran dibuka Januari-September, kuliah dimulai Oktober.
+- **Promosi Offline**: Fokus ke 50 sekolah terdekat dengan target kunjungan lebih dari 1x. Tim promosi terdiri dari dosen dan mahasiswa. Setiap kunjungan wajib ada laporan lengkap dengan absensi dan dokumentasi.
 
 ## ✅ ACTION ITEMS & PIC
-[Ekstrak semua tugas spesifik dengan format:]
-- [ ] **[Nama PIC]** - [Tugas detail] - [Deadline jika ada]
-
-Contoh:
-- [ ] **Sarah (Finance)** - Follow up payment gateway approval ke tim finance - Deadline: Hari ini jam 2 PM
-- [ ] **Budi (Developer)** - Lanjutkan integrasi API setelah approval diterima - Deadline: Jumat depan
-- [ ] **Tim Marketing** - Prepare campaign proposal dengan detail budget breakdown - Deadline: 15 Januari 2025
-
-JIKA TIDAK ADA ACTION ITEMS SPESIFIK, tulis:
-⚠️ Tidak ada action items spesifik yang dapat diidentifikasi dari transkrip ini.
-
-## 🎯 KEPUTUSAN YANG DIAMBIL
-[Tulis semua keputusan/kesepakatan yang diambil dalam meeting]
+[Ekstrak SEMUA tugas, follow-up, dan hal yang perlu dilakukan. Baca transkrip dengan teliti untuk menemukan:]
+- Permintaan data atau dokumen
+- Janji untuk mengirimkan sesuatu
+- Tugas yang disebutkan akan dikerjakan
+- Follow-up yang perlu dilakukan
 
 Format:
-- ✓ [Keputusan]: [Detail keputusan dan siapa yang setuju]
+- [ ] **[Nama PIC]** - [Tugas detail dengan konteks] - [Deadline jika disebutkan]
 
 Contoh:
-- ✓ Budget marketing akan dinaikkan 20%: Disetujui oleh CEO dan CFO dengan catatan harus ada monthly ROI report
-- ✓ Launch product ditunda 2 minggu: Keputusan tim untuk quality assurance lebih baik
+- [ ] **Mbak Gina** - Kirimkan pertanyaan lanjutan perihal website dan PMB ke Mas Rusti - Segera
+- [ ] **Mas Alfie** - Share laporan kegiatan promosi offline sebagai contoh format - Dalam waktu dekat
+- [ ] **Tim PMB** - Siapkan data sekolah (nama, alamat, PIC) dalam format Excel - Sebelum meeting berikutnya
 
-JIKA TIDAK ADA KEPUTUSAN, tulis:
-⚠️ Tidak ada keputusan formal yang diambil dalam meeting ini.
+**PENTING**: Jika tidak ada action items eksplisit, ekstrak implied action items dari diskusi (misalnya: "nanti saya kirimkan" = action item untuk mengirimkan sesuatu).
+
+JIKA BENAR-BENAR TIDAK ADA ACTION ITEMS:
+⚠️ Tidak ada action items spesifik yang dapat diidentifikasi dari transkrip ini.
+
+## 🎯 KEPUTUSAN & KESEPAKATAN
+[Tulis SEMUA keputusan, kesepakatan, dan kesimpulan penting. Termasuk:]
+- Persetujuan atau penolakan
+- Kesepakatan bersama
+- Pilihan yang diambil
+- Kesimpulan diskusi
+
+Format:
+- ✓ **[Keputusan]**: [Detail lengkap dengan alasan dan pihak yang terlibat]
+
+Contoh:
+- ✓ **Target Mahasiswa Baru 1000 Orang**: Disepakati untuk satu prodi, termasuk program hybrid (online & offline). Akan direview lagi setelah melihat hasil promosi.
+- ✓ **Fokus Promosi ke 50 Sekolah Terdekat**: Disetujui strategi kunjungan intensif (minimal 10x per tahun) ke sekolah dalam radius terdekat kampus.
+- ✓ **Sistem PMB Baru Dibutuhkan**: Disepakati perlu sistem untuk tracking agen, jadwal promosi, dan laporan kegiatan otomatis.
+
+JIKA TIDAK ADA KEPUTUSAN FORMAL:
+⚠️ Tidak ada keputusan formal yang diambil dalam meeting ini (meeting bersifat diskusi/sharing informasi).
 
 ## 📅 NEXT STEPS & FOLLOW UP
-[Tulis langkah selanjutnya dan jadwal meeting berikutnya jika ada]
+[Tulis langkah selanjutnya, jadwal meeting berikutnya, dan timeline yang disebutkan]
 
 Contoh:
-- Meeting follow-up: Jumat, 17 Januari 2025 jam 14:00 WIB
-- Agenda next meeting: Review hasil approval payment gateway dan testing
-- PIC next meeting: Sarah (moderator)
+- Meeting follow-up: Akan dijadwalkan setelah data lengkap terkumpul
+- Deadline pengumpulan data: 2 minggu dari sekarang
+- Agenda next meeting: Review sistem PMB dan fitur yang akan diimplementasikan
+- Timeline implementasi: Kick-off development dalam 1 bulan
 
-## 👥 PARTISIPAN
-[Jika bisa diidentifikasi dari transkrip, tulis daftar partisipan dan rolenya]
+## 👥 PARTISIPAN & PIHAK YANG TERLIBAT
+[Ekstrak SEMUA nama yang disebutkan dalam transkrip, kategorikan berdasarkan peran jika bisa diidentifikasi]
+
+Format:
+- **[Nama]** - [Role/Jabatan jika disebutkan] - [Kontribusi dalam meeting]
 
 Contoh:
-- John (Project Manager) - Moderator
-- Sarah (Finance Manager)
-- Budi (Backend Developer)
-- Speaker A, Speaker B (tidak teridentifikasi)
+- **Mbak Gina (Tim Teknis)** - Lead interviewer, menanyakan detail requirement sistem PMB
+- **Bu Dela & Bu Ayu** - Tidak hadir dalam meeting ini
+- **Mas Alfie** - Tim Promosi, menjelaskan proses kunjungan sekolah dan laporan kegiatan
+- **Pak Zul (Pimpinan)** - Menyetujui keputusan dan memberikan arahan strategi
+- **Speaker A, Speaker B** - Partisipan tidak teridentifikasi
+
+## 📊 DATA & ANGKA PENTING
+[Ekstrak SEMUA data kuantitatif, angka, statistik, dan metrics yang disebutkan]
+
+Contoh:
+- 332 mahasiswa total (5 angkatan)
+- 136 mahasiswa baru tahun ini
+- Target 1000 mahasiswa tahun depan
+- 76 mahasiswa dari jalur beasiswa
+- 105 sekolah asal mahasiswa saat ini
+- 50 sekolah target prioritas untuk promosi
+- Budget: Belum ditentukan spesifik
+- Timeline: Pendaftaran Januari-September, kuliah dimulai Oktober
 
 === ATURAN PENTING ===
 
 1. **BAHASA**: Seluruh output WAJIB dalam Bahasa Indonesia
-2. **EKSTRAKSI NAMA**: Cari dan gunakan nama asli dari transkrip (bukan "Speaker A/B")
-3. **SPESIFIK**: Action items harus spesifik dan actionable, hindari yang terlalu general
-4. **OBJEKTIF**: Tulis apa yang dibahas, jangan tambahkan interpretasi pribadi
-5. **LENGKAP**: Jangan skip section jika ada informasi yang relevan
-6. **HONEST**: Jika tidak ada data untuk section tertentu, tulis "Tidak ada [X] yang dapat diidentifikasi"
-7. **CONTEXT-AWARE**: Jika transkrip tidak jelas atau berantakan, tambahkan catatan di akhir
+2. **EKSTRAKSI NAMA**: Cari dan gunakan nama asli dari transkrip (JANGAN "Speaker A/B" kecuali benar-benar tidak ada nama)
+3. **DETAIL ANGKA**: Tulis SEMUA angka, persentase, dan data kuantitatif yang disebutkan
+4. **SPESIFIK**: Action items harus spesifik dan actionable dengan konteks lengkap
+5. **OBJEKTIF**: Tulis apa yang BENAR-BENAR dibahas, jangan tambahkan interpretasi
+6. **LENGKAP**: Untuk meeting >30 menit, output MINIMAL 1500 kata total
+7. **HONEST**: Jika tidak ada data untuk section tertentu, tulis "Tidak ada [X] yang dapat diidentifikasi"
+8. **CONTEXT-AWARE**: Jika transkrip tidak jelas, tambahkan catatan di akhir
 
 === CATATAN KHUSUS ===
 
 Jika transkrip:
-- Terpotong-potong atau tidak jelas → Tambahkan note di akhir
-- Tidak ada pembicara kedua → Ini mungkin monolog, bukan meeting
-- Topik melompat-lompat → Identifikasi sebagai brainstorming session
-- Sangat pendek (<100 kata) → Note bahwa ini mungkin incomplete recording
+- Terpotong-potong atau tidak jelas → Tambahkan note: "⚠️ Transkrip terpotong-potong, beberapa detail mungkin terlewat"
+- Tidak ada pembicara kedua → Note: "⚠️ Ini adalah monolog, bukan meeting multi-partisipan"
+- Topik melompat-lompat → Note: "ℹ️ Meeting berbentuk brainstorming/diskusi terbuka dengan banyak topik"
+- Sangat pendek (<100 kata) → Note: "⚠️ Rekaman sangat pendek, mungkin incomplete"
 
-Sekarang analisis transkrip berikut dan buat notulen meeting yang profesional:`;
+**REMINDER PENTING**:
+- Meeting yang PANJANG (>30 menit) = Summary PANJANG (minimal 1500 kata)
+- Meeting 1 jam+ = Summary harus 2000-3000 kata dengan 10-20 poin pembahasan
+- JANGAN membuat summary terlalu singkat untuk meeting yang panjang!
+
+Sekarang analisis transkrip berikut dan buat notulen meeting yang LENGKAP dan PROFESIONAL:`;
         
         const result = await assemblyClient.lemur.task({
             transcript_ids: [transcriptId],
