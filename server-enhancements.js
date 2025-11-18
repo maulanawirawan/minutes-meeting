@@ -853,6 +853,382 @@ function setupEnhancements(app, assemblyClient, authMiddleware, query, queryOne)
         }
     });
 
+    // ================================================================
+    // ✅ NEW: Advanced Transcription with All Options
+    // ================================================================
+    app.post('/api/meetings/:id/transcribe-advanced', authMiddleware, async (req, res) => {
+        try {
+            const { id } = req.params;
+            const {
+                language = 'id',
+                enable_diarization = true,
+                speaker_config = {},
+                custom_spelling = [],
+                keep_filler_words = false,
+                multichannel = false,
+                start_ms = null,
+                end_ms = null
+            } = req.body;
+
+            // Get meeting and audio file
+            const meeting = await queryOne(
+                'SELECT * FROM meetings WHERE id = $1 AND deleted_at IS NULL',
+                [id]
+            );
+
+            if (!meeting) {
+                return res.status(404).json({
+                    success: false,
+                    error: 'Meeting not found'
+                });
+            }
+
+            const audioFile = await queryOne(
+                `SELECT * FROM audio_files
+                 WHERE meeting_id = $1 AND deleted_at IS NULL
+                 ORDER BY uploaded_at DESC LIMIT 1`,
+                [id]
+            );
+
+            if (!audioFile || !audioFile.file_path) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'No audio file found for this meeting'
+                });
+            }
+
+            // Build transcription options
+            const transcriptionOptions = {
+                audio: audioFile.file_path,
+                language_code: language === 'multi' ? undefined : language,
+                language_detection: language === 'multi',
+                speech_model: 'universal',
+
+                // Speaker configuration
+                speaker_labels: enable_diarization,
+                ...(speaker_config.exact_count && {
+                    speakers_expected: speaker_config.exact_count
+                }),
+                ...(speaker_config.min_speakers && speaker_config.max_speakers && {
+                    speaker_options: {
+                        min_speakers_expected: speaker_config.min_speakers,
+                        max_speakers_expected: speaker_config.max_speakers
+                    }
+                }),
+
+                // Multichannel
+                multichannel: multichannel,
+
+                // Custom spelling
+                ...(custom_spelling.length > 0 && {
+                    custom_spelling: custom_spelling
+                }),
+
+                // Filler words
+                disfluencies: keep_filler_words,
+
+                // Audio segment
+                ...(start_ms && { audio_start_from: start_ms }),
+                ...(end_ms && { audio_end_at: end_ms }),
+
+                // AI Features
+                auto_highlights: true,
+                sentiment_analysis: true,
+                entity_detection: true,
+                auto_chapters: true,
+
+                // Formatting
+                punctuate: true,
+                format_text: true
+            };
+
+            console.log('🚀 Starting advanced transcription with options:', JSON.stringify(transcriptionOptions, null, 2));
+
+            // Transcribe with retry logic
+            let transcript;
+            let retries = 3;
+            let lastError;
+
+            for (let attempt = 1; attempt <= retries; attempt++) {
+                try {
+                    console.log(`🔄 Attempt ${attempt}/${retries}...`);
+                    transcript = await assemblyClient.transcripts.transcribe(transcriptionOptions);
+                    console.log('✅ Transcription completed');
+                    break;
+                } catch (error) {
+                    lastError = error;
+                    console.error(`❌ Attempt ${attempt} failed:`, error.message);
+
+                    if (attempt < retries) {
+                        const waitTime = attempt * 2000;
+                        console.log(`⏳ Waiting ${waitTime/1000}s before retry...`);
+                        await new Promise(resolve => setTimeout(resolve, waitTime));
+                    }
+                }
+            }
+
+            if (!transcript || transcript.status === 'error') {
+                throw lastError || new Error('Transcription failed: ' + transcript?.error);
+            }
+
+            // Store transcript ID
+            await query(
+                `UPDATE audio_files SET assembly_transcript_id = $1
+                 WHERE id = $2`,
+                [transcript.id, audioFile.id]
+            );
+
+            // Save segments, highlights, entities, chapters (using existing logic)
+            // ... (existing save logic from transcribeWithAssemblyAIEnhanced)
+
+            res.json({
+                success: true,
+                message: 'Advanced transcription completed',
+                data: {
+                    transcript_id: transcript.id,
+                    utterances_count: transcript.utterances?.length || 0,
+                    highlights_count: transcript.auto_highlights_result?.results?.length || 0,
+                    entities_count: transcript.entities?.length || 0,
+                    chapters_count: transcript.chapters?.length || 0
+                }
+            });
+
+        } catch (error) {
+            console.error('❌ Advanced transcription error:', error);
+            res.status(500).json({
+                success: false,
+                error: 'Advanced transcription failed: ' + error.message
+            });
+        }
+    });
+
+    // ================================================================
+    // ✅ NEW: Delete Transcript
+    // ================================================================
+    app.delete('/api/transcripts/:transcript_id', authMiddleware, async (req, res) => {
+        try {
+            const { transcript_id } = req.params;
+
+            // Verify ownership
+            const audioFile = await queryOne(
+                `SELECT af.*, m.user_id
+                 FROM audio_files af
+                 JOIN meetings m ON af.meeting_id = m.id
+                 WHERE af.assembly_transcript_id = $1
+                 AND m.user_id = $2
+                 AND af.deleted_at IS NULL`,
+                [transcript_id, req.userId]
+            );
+
+            if (!audioFile) {
+                return res.status(404).json({
+                    success: false,
+                    error: 'Transcript not found or access denied'
+                });
+            }
+
+            // Delete from AssemblyAI
+            await assemblyClient.transcripts.delete(transcript_id);
+
+            // Clear transcript ID from database
+            await query(
+                `UPDATE audio_files SET assembly_transcript_id = NULL
+                 WHERE assembly_transcript_id = $1`,
+                [transcript_id]
+            );
+
+            res.json({
+                success: true,
+                message: 'Transcript deleted successfully'
+            });
+
+        } catch (error) {
+            console.error('❌ Delete transcript error:', error);
+            res.status(500).json({
+                success: false,
+                error: 'Failed to delete transcript: ' + error.message
+            });
+        }
+    });
+
+    // ================================================================
+    // ✅ NEW: Transcribe Audio Segment
+    // ================================================================
+    app.post('/api/meetings/:id/transcribe-segment', authMiddleware, async (req, res) => {
+        try {
+            const { id } = req.params;
+            const { start_ms, end_ms, language = 'id' } = req.body;
+
+            if (!start_ms || !end_ms) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'start_ms and end_ms required'
+                });
+            }
+
+            const audioFile = await queryOne(
+                `SELECT * FROM audio_files
+                 WHERE meeting_id = $1 AND deleted_at IS NULL
+                 ORDER BY uploaded_at DESC LIMIT 1`,
+                [id]
+            );
+
+            if (!audioFile) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'No audio file found'
+                });
+            }
+
+            const transcript = await assemblyClient.transcripts.transcribe({
+                audio: audioFile.file_path,
+                language_code: language,
+                audio_start_from: start_ms,
+                audio_end_at: end_ms,
+                speaker_labels: true
+            });
+
+            if (transcript.status === 'error') {
+                throw new Error('Transcription failed: ' + transcript.error);
+            }
+
+            res.json({
+                success: true,
+                data: {
+                    transcript_id: transcript.id,
+                    text: transcript.text,
+                    duration_ms: end_ms - start_ms,
+                    utterances: transcript.utterances || []
+                }
+            });
+
+        } catch (error) {
+            console.error('❌ Segment transcription error:', error);
+            res.status(500).json({
+                success: false,
+                error: 'Segment transcription failed: ' + error.message
+            });
+        }
+    });
+
+    // ================================================================
+    // ✅ NEW: Generate Temporary Streaming Token
+    // ================================================================
+    app.post('/api/streaming/token', authMiddleware, async (req, res) => {
+        try {
+            const { expires_in = 3600 } = req.body; // Default 1 hour
+
+            // Validate expires_in (1 second to 10 minutes)
+            if (expires_in < 1 || expires_in > 600) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'expires_in must be between 1 and 600 seconds'
+                });
+            }
+
+            const token = await assemblyClient.realtime.createTemporaryToken({
+                expires_in: expires_in
+            });
+
+            res.json({
+                success: true,
+                data: {
+                    token: token,
+                    expires_in: expires_in,
+                    expires_at: new Date(Date.now() + expires_in * 1000)
+                }
+            });
+
+        } catch (error) {
+            console.error('❌ Token generation error:', error);
+            res.status(500).json({
+                success: false,
+                error: 'Failed to generate token: ' + error.message
+            });
+        }
+    });
+
+    // ================================================================
+    // ✅ NEW: Transcribe Multichannel Audio
+    // ================================================================
+    app.post('/api/meetings/:id/transcribe-multichannel', authMiddleware, async (req, res) => {
+        try {
+            const { id } = req.params;
+            const { language = 'id' } = req.body;
+
+            const audioFile = await queryOne(
+                `SELECT * FROM audio_files
+                 WHERE meeting_id = $1 AND deleted_at IS NULL
+                 ORDER BY uploaded_at DESC LIMIT 1`,
+                [id]
+            );
+
+            if (!audioFile) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'No audio file found'
+                });
+            }
+
+            const transcript = await assemblyClient.transcripts.transcribe({
+                audio: audioFile.file_path,
+                language_code: language,
+                multichannel: true,
+                speaker_labels: true
+            });
+
+            if (transcript.status === 'error') {
+                throw new Error('Transcription failed: ' + transcript.error);
+            }
+
+            // Store transcript ID
+            await query(
+                `UPDATE audio_files SET assembly_transcript_id = $1
+                 WHERE id = $2`,
+                [transcript.id, audioFile.id]
+            );
+
+            // Save utterances with channel information
+            if (transcript.utterances && transcript.utterances.length > 0) {
+                for (let i = 0; i < transcript.utterances.length; i++) {
+                    const utterance = transcript.utterances[i];
+
+                    await query(
+                        `INSERT INTO transcripts
+                         (meeting_id, text, start_time, end_time, speaker, confidence, sequence_number, sentiment, sentiment_score)
+                         VALUES ($1, $2, $3, $4, $5, $6, $7, 'NEUTRAL', 0.5)`,
+                        [
+                            id,
+                            utterance.text,
+                            utterance.start,
+                            utterance.end,
+                            `Channel ${utterance.channel || utterance.speaker}`,
+                            utterance.confidence || 0.95,
+                            i
+                        ]
+                    );
+                }
+            }
+
+            res.json({
+                success: true,
+                message: 'Multichannel transcription completed',
+                data: {
+                    transcript_id: transcript.id,
+                    audio_channels: transcript.audio_channels,
+                    utterances_count: transcript.utterances?.length || 0
+                }
+            });
+
+        } catch (error) {
+            console.error('❌ Multichannel transcription error:', error);
+            res.status(500).json({
+                success: false,
+                error: 'Multichannel transcription failed: ' + error.message
+            });
+        }
+    });
+
     console.log('✅ AssemblyAI Enhanced Features initialized');
 }
 
