@@ -2839,7 +2839,7 @@ app.get('/api/jitsi/guest-join/:meetingId', async (req, res) => {
         const { meetingId } = req.params;
         const { name } = req.query;
 
-        console.log(`🚪 Guest attempting to join meeting ${meetingId}`);
+        console.log(`👤 Guest "${name || 'Anonymous'}" requesting join for meeting ${meetingId}`);
 
         // Get meeting info
         const meeting = await queryOne(

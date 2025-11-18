@@ -31,11 +31,11 @@ function generateJitsiToken(options) {
         const now = Math.floor(Date.now() / 1000);
         
         const appId = process.env.JITSI_APP_ID;
-        
-        // ✅ CRITICAL: JWT structure with LOBBY BYPASS
+
+        // ✅ CRITICAL FIX: iss MUST be appId, not 'chat'
         const payload = {
             aud: 'jitsi',
-            iss: 'chat',
+            iss: appId,        // ← FIXED: was 'chat', should be appId
             sub: appId,
             room: roomName,
             exp: now + expiresIn,
@@ -63,7 +63,7 @@ function generateJitsiToken(options) {
         const token = jwt.sign(payload, privateKey, {
             algorithm: 'RS256',
             header: {
-                kid: process.env.JITSI_KID || appId,
+                kid: appId,    // ✅ FIXED: Always use appId, not JITSI_KID
                 typ: 'JWT',
                 alg: 'RS256'
             }
