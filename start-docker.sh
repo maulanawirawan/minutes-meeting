@@ -12,29 +12,65 @@ echo "🚀 naraMEET - Automatic Docker Startup"
 echo "================================================================"
 echo ""
 
-# Detect network IP address (WiFi/Ethernet)
+# Detect network IP address (WiFi/Ethernet), skip Docker/WSL IPs
 echo "🔍 Detecting your network IP address..."
 echo ""
 
+# Function to check if IP is Docker/WSL internal
+is_internal_ip() {
+    local ip=$1
+    # Skip Docker (172.x.x.x), WSL (10.0.75.x), APIPA (169.254.x.x)
+    if [[ $ip =~ ^172\. ]] || [[ $ip =~ ^10\.0\.75\. ]] || [[ $ip =~ ^169\.254\. ]]; then
+        return 0  # true (is internal)
+    else
+        return 1  # false (not internal)
+    fi
+}
+
 # Try different methods to get IP address
 if [[ "$OSTYPE" == "darwin"* ]]; then
-    # macOS
-    HOST_IP=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null)
+    # macOS - try multiple interfaces
+    for interface in en0 en1 en2; do
+        TEMP_IP=$(ipconfig getifaddr $interface 2>/dev/null)
+        if [ -n "$TEMP_IP" ] && ! is_internal_ip "$TEMP_IP"; then
+            HOST_IP=$TEMP_IP
+            echo "🔍 Found candidate IP on $interface: $TEMP_IP"
+            break
+        fi
+    done
 else
-    # Linux
-    HOST_IP=$(hostname -I | awk '{print $1}')
+    # Linux - get all IPs and filter
+    for ip in $(hostname -I); do
+        if ! is_internal_ip "$ip"; then
+            HOST_IP=$ip
+            echo "🔍 Found candidate IP: $ip"
+            break
+        fi
+    done
 fi
 
 # Check if IP was found
 if [ -z "$HOST_IP" ]; then
     echo "❌ Could not detect network IP address!"
     echo ""
-    echo "Please check your network connection and try again."
+    echo "💡 This might happen if:"
+    echo "   - You're not connected to WiFi/Ethernet"
+    echo "   - All IPs are Docker/WSL internal IPs"
+    echo ""
+    echo "🔧 Manual fix: Run this command to see all IPs:"
+    echo "   ip addr show  (Linux)"
+    echo "   ifconfig      (macOS)"
+    echo ""
+    echo "Then set HOST_IP manually:"
+    echo "   export HOST_IP=your.wifi.ip.address"
+    echo "   docker-compose up -d --build"
     echo ""
     exit 1
 fi
 
+echo ""
 echo "✅ Detected Host IP: $HOST_IP"
+echo "   (Skipped Docker/WSL IPs: 172.x.x.x, 10.0.75.x, 169.254.x.x)"
 echo ""
 
 # Export as environment variable for docker-compose
