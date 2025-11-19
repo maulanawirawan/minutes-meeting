@@ -33,10 +33,10 @@ function generateJitsiToken(options) {
         const appId = process.env.JITSI_APP_ID;
         const kid = process.env.JITSI_KID || appId;  // ✅ Use JITSI_KID from .env
 
-        // ✅ CRITICAL FIX: iss MUST be appId, not 'chat'
+        // ✅ CRITICAL FIX: iss MUST be 'chat' for JaaS
         const payload = {
             aud: 'jitsi',
-            iss: appId,        // ← FIXED: was 'chat', should be appId
+            iss: 'chat',       // ✅ MUST be 'chat' for Jitsi JaaS!
             sub: appId,
             room: roomName,
             exp: now + expiresIn,
