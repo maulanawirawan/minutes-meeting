@@ -390,9 +390,11 @@
                 });
 
                 if (response.ok) {
-                    console.log('✅ Recording uploaded successfully');
+                    const result = await response.json();
+                    console.log('✅ Recording uploaded successfully:', result);
                 } else {
-                    console.error('❌ Upload failed:', await response.text());
+                    const errorData = await response.json();
+                    console.error('❌ Upload failed:', errorData);
                 }
             } catch (error) {
                 console.error('❌ Upload error:', error);

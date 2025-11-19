@@ -2904,6 +2904,81 @@ app.get('/api/jitsi/guest-join/:meetingId', async (req, res) => {
     }
 });
 
+// ==================== RECORDING ENDPOINTS ====================
+
+// Start recording notification
+app.post('/api/meetings/:id/start-recording', authMiddleware, async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        console.log(`🔴 Recording started for meeting ${id}`);
+
+        // Update meeting status
+        await query(
+            `UPDATE meetings SET
+                status = 'recording',
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = $1`,
+            [id]
+        );
+
+        res.json({
+            success: true,
+            message: 'Recording started'
+        });
+
+    } catch (error) {
+        console.error('❌ Start recording error:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// Upload recording file
+app.post('/api/meetings/:id/upload-recording', authMiddleware, upload.single('recording'), async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                error: 'No recording file provided'
+            });
+        }
+
+        console.log(`✅ Recording uploaded for meeting ${id}:`, req.file.filename);
+
+        // Save recording path to database
+        await query(
+            `UPDATE meetings SET
+                recording_path = $1,
+                status = 'completed',
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = $2`,
+            [req.file.path, id]
+        );
+
+        res.json({
+            success: true,
+            message: 'Recording uploaded successfully',
+            data: {
+                filename: req.file.filename,
+                path: req.file.path,
+                size: req.file.size
+            }
+        });
+
+    } catch (error) {
+        console.error('❌ Upload recording error:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
 console.log('🎥 Jitsi Meeting endpoints registered');
 
 
