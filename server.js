@@ -3476,7 +3476,28 @@ console.log('✅ Speaker Identification & Translation endpoints configured');
 
 // ==================== START SERVER ====================
 
+// Helper function to get local IP addresses
+function getLocalIPAddresses() {
+    const os = require('os');
+    const networkInterfaces = os.networkInterfaces();
+    const addresses = [];
+
+    for (const interfaceName in networkInterfaces) {
+        const interfaces = networkInterfaces[interfaceName];
+        for (const iface of interfaces) {
+            // Skip internal (loopback) and non-IPv4 addresses
+            if (iface.family === 'IPv4' && !iface.internal) {
+                addresses.push(iface.address);
+            }
+        }
+    }
+
+    return addresses;
+}
+
 const httpServer = app.listen(PORT, HOST, () => {
+    const localIPs = getLocalIPAddresses();
+
     console.log('\n');
     console.log('╔════════════════════════════════════════════════════════════╗');
     console.log('║   ⚡ naraMEET v2.0 ULTIMATE - AssemblyAI Edition ⚡       ║');
@@ -3494,6 +3515,18 @@ const httpServer = app.listen(PORT, HOST, () => {
     console.log('║  🔑 Default Login:                                         ║');
     console.log('║     Username: admin                                        ║');
     console.log('║     Password: admin123                                     ║');
+    console.log('╠════════════════════════════════════════════════════════════╣');
+    console.log('║  🌍 Access URLs (HTTP):                                    ║');
+    console.log(`║     Local:    http://localhost:${PORT}                        ║`);
+    if (localIPs.length > 0) {
+        localIPs.forEach((ip, index) => {
+            if (index === 0) {
+                console.log(`║     Network:  http://${ip}:${PORT}${' '.repeat(Math.max(0, 24 - ip.length))}║`);
+            } else {
+                console.log(`║               http://${ip}:${PORT}${' '.repeat(Math.max(0, 24 - ip.length))}║`);
+            }
+        });
+    }
     console.log('╚════════════════════════════════════════════════════════════╝');
     console.log('\n');
 });
@@ -3507,10 +3540,21 @@ try {
 
     httpsServer = https.createServer(credentials, app);
     httpsServer.listen(HTTPS_PORT, HOST, () => {
+        const localIPs = getLocalIPAddresses();
+
         console.log(`╔════════════════════════════════════════════════════════════╗`);
-        console.log(`║  🔒 HTTPS Server: https://${HOST}:${HTTPS_PORT}                   ║`);
-        console.log(`║  📱 Mobile Access: https://192.168.1.20:${HTTPS_PORT}             ║`);
-        console.log(`║  🎤 Microphone access enabled on HTTPS                     ║`);
+        console.log(`║  🔒 HTTPS Server (for Microphone/Camera):                  ║`);
+        console.log(`║     Local:    https://localhost:${HTTPS_PORT}                      ║`);
+        if (localIPs.length > 0) {
+            localIPs.forEach((ip, index) => {
+                if (index === 0) {
+                    console.log(`║     Network:  https://${ip}:${HTTPS_PORT}${' '.repeat(Math.max(0, 23 - ip.length))}║`);
+                } else {
+                    console.log(`║               https://${ip}:${HTTPS_PORT}${' '.repeat(Math.max(0, 23 - ip.length))}║`);
+                }
+            });
+        }
+        console.log(`║  ⚠️  Certificate Warning: Click "Proceed anyway"           ║`);
         console.log(`╚════════════════════════════════════════════════════════════╝\n`);
     });
 } catch (error) {
