@@ -15,6 +15,7 @@ services:
       - PORT=3000
       - HOST=0.0.0.0
       - HTTPS_PORT=8443
+      - HOST_IP=${HOST_IP}  # Automatically detected host machine IP
       - DATABASE_URL=postgresql://narameet:narameet123@postgres:5432/narameet?sslmode=disable
       - REDIS_URL=redis://redis:6379
       - JWT_SECRET=${JWT_SECRET}

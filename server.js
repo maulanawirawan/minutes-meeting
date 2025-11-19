@@ -3477,10 +3477,20 @@ console.log('✅ Speaker Identification & Translation endpoints configured');
 // ==================== START SERVER ====================
 
 // Helper function to get local IP addresses
+// Prioritizes HOST_IP environment variable (set by start-docker.bat/sh)
 function getLocalIPAddresses() {
+    const addresses = [];
+
+    // 🔥 PRIORITY: Use HOST_IP from environment (set by startup script)
+    if (process.env.HOST_IP) {
+        addresses.push(process.env.HOST_IP);
+        console.log(`✅ Using HOST_IP from environment: ${process.env.HOST_IP}`);
+        return addresses;
+    }
+
+    // Fallback: Detect IPs from network interfaces (Docker container IPs)
     const os = require('os');
     const networkInterfaces = os.networkInterfaces();
-    const addresses = [];
 
     for (const interfaceName in networkInterfaces) {
         const interfaces = networkInterfaces[interfaceName];
@@ -3517,13 +3527,15 @@ const httpServer = app.listen(PORT, HOST, () => {
     console.log('║     Password: admin123                                     ║');
     console.log('╠════════════════════════════════════════════════════════════╣');
     console.log('║  🌍 Access URLs (HTTP):                                    ║');
-    console.log(`║     Local:    http://localhost:${PORT}                        ║`);
+    console.log(`║     Local:    http://localhost:8000                        ║`);
     if (localIPs.length > 0) {
+        // Display network URLs with host-accessible port (8000)
+        const displayPort = process.env.HOST_IP ? '8000' : PORT;
         localIPs.forEach((ip, index) => {
             if (index === 0) {
-                console.log(`║     Network:  http://${ip}:${PORT}${' '.repeat(Math.max(0, 24 - ip.length))}║`);
+                console.log(`║     Network:  http://${ip}:${displayPort}${' '.repeat(Math.max(0, 24 - ip.length - displayPort.length))}║`);
             } else {
-                console.log(`║               http://${ip}:${PORT}${' '.repeat(Math.max(0, 24 - ip.length))}║`);
+                console.log(`║               http://${ip}:${displayPort}${' '.repeat(Math.max(0, 24 - ip.length - displayPort.length))}║`);
             }
         });
     }
