@@ -22,15 +22,16 @@ function generateJitsiToken(options) {
         }
 
         const privateKeyPath = process.env.JITSI_PRIVATE_KEY_PATH || './ssl-certs/jitsi-private.key';
-        
+
         if (!fs.existsSync(privateKeyPath)) {
             throw new Error(`Private key not found at: ${privateKeyPath}`);
         }
-        
+
         const privateKey = fs.readFileSync(path.resolve(privateKeyPath), 'utf8');
         const now = Math.floor(Date.now() / 1000);
-        
+
         const appId = process.env.JITSI_APP_ID;
+        const kid = process.env.JITSI_KID || appId;  // ✅ Use JITSI_KID from .env
 
         // ✅ CRITICAL FIX: iss MUST be appId, not 'chat'
         const payload = {
@@ -63,7 +64,7 @@ function generateJitsiToken(options) {
         const token = jwt.sign(payload, privateKey, {
             algorithm: 'RS256',
             header: {
-                kid: appId,    // ✅ FIXED: Always use appId, not JITSI_KID
+                kid: kid,    // ✅ FIXED: Use JITSI_KID from .env
                 typ: 'JWT',
                 alg: 'RS256'
             }
