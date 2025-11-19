@@ -1666,21 +1666,24 @@
                 </div>
                 <div class="form-grid">
                     <div class="form-group">
-                        <label for="participantName">👤 Full Name</label>
-                        <input type="text" id="participantName" placeholder="Enter full name" />
+                        <label for="participantName">👤 Full Name <span style="color: #ff3366;">*</span></label>
+                        <input type="text" id="participantName" placeholder="Enter full name" required />
                     </div>
                     <div class="form-group">
-                        <label for="participantEmail">📧 Email</label>
-                        <input type="email" id="participantEmail" placeholder="name@company.com" />
+                        <label for="participantEmail">📧 Email <span style="color: #ff3366;">*</span></label>
+                        <input type="email" id="participantEmail" placeholder="name@company.com" required />
                     </div>
                     <div class="form-group">
-                        <label for="participantPhone">📱 Phone</label>
-                        <input type="tel" id="participantPhone" placeholder="+62 812-3456-7890" />
+                        <label for="participantPhone">📱 Phone <span style="color: var(--text-secondary); font-size: 0.9em;">(Optional)</span></label>
+                        <input type="tel" id="participantPhone" placeholder="+62 812-3456-7890 (optional)" />
                     </div>
                 </div>
                 <div class="form-group">
-                    <label for="participantRole">🎭 Role / Position</label>
-                    <input type="text" id="participantRole" placeholder="e.g., Project Manager" />
+                    <label for="participantRole">🎭 Role / Position <span style="color: var(--text-secondary); font-size: 0.9em;">(Optional)</span></label>
+                    <input type="text" id="participantRole" placeholder="e.g., Project Manager (optional)" />
+                </div>
+                <div style="margin: 15px 0; padding: 10px; background: rgba(255, 51, 102, 0.1); border-left: 3px solid #ff3366; font-size: 0.95em;">
+                    <span style="color: #ff3366;">*</span> <strong>Required fields:</strong> Name and Email are required to add a participant.
                 </div>
                 <div class="checkbox-item" style="margin: 20px 0;">
                     <input type="checkbox" id="saveToContacts">
