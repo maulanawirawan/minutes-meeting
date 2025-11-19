@@ -1,0 +1,13 @@
+version: "2"
+authtoken_from_env: true
+
+tunnels:
+  http:
+    proto: http
+    addr: 8000
+    inspect: true
+
+  https:
+    proto: http
+    addr: 8443
+    inspect: true
