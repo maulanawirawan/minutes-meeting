@@ -2813,6 +2813,14 @@
                 const saveToContacts = document.getElementById('saveToContacts').checked;
 
                 console.log('🔍 Adding participant:', { name, email, phone, role });
+                console.log('🆔 Current Meeting ID:', currentMeetingId);
+                console.log('📊 Current participants count:', participants.length);
+
+                if (!currentMeetingId) {
+                    showStatus('❌ No meeting selected. Please create or load a meeting first.', 'error');
+                    console.error('❌ currentMeetingId is undefined/null');
+                    return;
+                }
 
                 if (!name || !email) {
                     showStatus('❌ Name and email are required', 'error');
@@ -2822,13 +2830,18 @@
                 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                 if (!emailRegex.test(email)) {
                     showStatus('❌ Invalid email format', 'error');
+                    console.error('❌ Invalid email:', email);
                     return;
                 }
 
                 // Show loading state
                 showStatus('⏳ Adding participant...', 'info');
 
-                const response = await apiRequest(`/api/meetings/${currentMeetingId}/participants`, {
+                const apiUrl = `/api/meetings/${currentMeetingId}/participants`;
+                console.log('📡 API Request URL:', apiUrl);
+                console.log('📡 Request body:', { name, email, phone, role });
+
+                const response = await apiRequest(apiUrl, {
                     method: 'POST',
                     body: JSON.stringify({
                         name: name,
@@ -2838,12 +2851,17 @@
                     })
                 });
 
-                if (response.success) {
-                    console.log('✅ Participant added:', response.data);
+                console.log('📥 API Response:', response);
+
+                if (response && response.success) {
+                    console.log('✅ Participant added successfully:', response.data);
                     showStatus(`✅ ${name} added to meeting`, 'success');
 
                     // ✅ Add participant to local array for instant UI update
                     participants.push(response.data);
+                    console.log('📊 Updated participants count:', participants.length);
+                    console.log('📋 Participants array:', participants);
+
                     updateParticipantList();
                     updateEmailRecipients();
 
@@ -2881,12 +2899,14 @@
                     document.getElementById('contactSelect').value = '';
 
                 } else {
-                    console.error('❌ Failed to add participant:', response);
-                    showStatus(`❌ ${response.error || 'Failed to add participant'}`, 'error');
+                    console.error('❌ Failed to add participant - Response:', response);
+                    const errorMsg = response?.error || response?.message || 'Failed to add participant';
+                    showStatus(`❌ ${errorMsg}`, 'error');
                 }
 
             } catch (error) {
                 console.error('❌ Add participant error:', error);
+                console.error('❌ Error stack:', error.stack);
                 showStatus(`❌ Error: ${error.message}`, 'error');
             }
         }
