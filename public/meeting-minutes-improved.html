@@ -2216,7 +2216,7 @@
                 
                 <div class="form-group">
                     <label for="apiKey">🔑 API Key (Optional)</label>
-                    <input type="password" id="apiKey" placeholder="Enter API key if required" />
+                    <input type="text" id="apiKey" placeholder="Enter API key if required" autocomplete="off" style="font-family: monospace;" />
                 </div>
                 
                 <div style="margin: 25px 0; display: flex; gap: 15px; flex-wrap: wrap;">
@@ -2811,20 +2811,23 @@
                 const phone = document.getElementById('participantPhone').value.trim();
                 const role = document.getElementById('participantRole').value.trim();
                 const saveToContacts = document.getElementById('saveToContacts').checked;
-                
+
                 console.log('🔍 Adding participant:', { name, email, phone, role });
-                
+
                 if (!name || !email) {
                     showStatus('❌ Name and email are required', 'error');
                     return;
                 }
-                
+
                 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                 if (!emailRegex.test(email)) {
                     showStatus('❌ Invalid email format', 'error');
                     return;
                 }
-                
+
+                // Show loading state
+                showStatus('⏳ Adding participant...', 'info');
+
                 const response = await apiRequest(`/api/meetings/${currentMeetingId}/participants`, {
                     method: 'POST',
                     body: JSON.stringify({
@@ -2834,11 +2837,16 @@
                         role: role
                     })
                 });
-                
+
                 if (response.success) {
                     console.log('✅ Participant added:', response.data);
                     showStatus(`✅ ${name} added to meeting`, 'success');
-                    
+
+                    // ✅ Add participant to local array for instant UI update
+                    participants.push(response.data);
+                    updateParticipantList();
+                    updateEmailRecipients();
+
                     if (saveToContacts) {
                         try {
                             const contactResponse = await apiRequest('/api/contacts', {
@@ -2851,7 +2859,7 @@
                                     is_shared: false
                                 })
                             });
-                            
+
                             if (contactResponse.success) {
                                 console.log('✅ Saved to contacts library');
                                 await loadContacts();
@@ -2862,7 +2870,8 @@
                             // Continue anyway - participant is already added
                         }
                     }
-                    
+
+                    // Clear form inputs
                     document.getElementById('participantName').value = '';
                     document.getElementById('participantEmail').value = '';
                     document.getElementById('participantPhone').value = '';
@@ -2870,15 +2879,12 @@
                     document.getElementById('saveToContacts').checked = false;
                     document.getElementById('systemUserSelect').value = '';
                     document.getElementById('contactSelect').value = '';
-                    
-                    // Reload participants list
-                    // await displayParticipants();
-                    
+
                 } else {
                     console.error('❌ Failed to add participant:', response);
                     showStatus(`❌ ${response.error || 'Failed to add participant'}`, 'error');
                 }
-                
+
             } catch (error) {
                 console.error('❌ Add participant error:', error);
                 showStatus(`❌ Error: ${error.message}`, 'error');
