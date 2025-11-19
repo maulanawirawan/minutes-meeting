@@ -1503,8 +1503,281 @@ function setupEnhancements(app, assemblyClient, authMiddleware, query, queryOne)
     console.log('✅ AssemblyAI Enhanced Features initialized');
 }
 
+/**
+ * 🎭 SPEAKER IDENTIFICATION
+ * Identify speakers by name or role instead of generic labels (A, B, C)
+ *
+ * @param {string} transcriptId - AssemblyAI transcript ID
+ * @param {string} speakerType - 'name' or 'role'
+ * @param {Array<string>} knownValues - List of speaker names or roles
+ * @param {object} assemblyClient - AssemblyAI client instance
+ * @returns {object} - Updated transcript with identified speakers
+ */
+async function identifySpeakers(transcriptId, speakerType, knownValues, assemblyClient) {
+    try {
+        console.log(`🎭 Identifying speakers for transcript: ${transcriptId}`);
+        console.log(`📋 Type: ${speakerType}`);
+        console.log(`👥 Known values: ${knownValues.join(', ')}`);
+
+        // Validate input
+        if (!['name', 'role'].includes(speakerType)) {
+            throw new Error('speakerType must be either "name" or "role"');
+        }
+
+        if (speakerType === 'role' && (!knownValues || knownValues.length === 0)) {
+            throw new Error('known_values is required when speaker_type is "role"');
+        }
+
+        // Limit each value to 35 characters
+        const validatedValues = knownValues.map(v => v.substring(0, 35));
+
+        // Build request body for Speech Understanding API
+        const requestBody = {
+            transcript_id: transcriptId,
+            speech_understanding: {
+                request: {
+                    speaker_identification: {
+                        speaker_type: speakerType,
+                        ...(validatedValues.length > 0 && { known_values: validatedValues })
+                    }
+                }
+            }
+        };
+
+        console.log('📤 Request to Speech Understanding API:', JSON.stringify(requestBody, null, 2));
+
+        // Call Speech Understanding API
+        const response = await fetch('https://llm-gateway.assemblyai.com/v1/understanding', {
+            method: 'POST',
+            headers: {
+                'Authorization': process.env.ASSEMBLYAI_API_KEY,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestBody)
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Speech Understanding API error (${response.status}): ${errorText}`);
+        }
+
+        const result = await response.json();
+
+        console.log('✅ Speaker identification completed');
+        console.log(`📊 Identified speakers in ${result.utterances?.length || 0} utterances`);
+
+        // Log sample of identified speakers
+        if (result.utterances && result.utterances.length > 0) {
+            const uniqueSpeakers = [...new Set(result.utterances.map(u => u.speaker))];
+            console.log(`👥 Unique speakers identified: ${uniqueSpeakers.join(', ')}`);
+        }
+
+        return result;
+
+    } catch (error) {
+        console.error('❌ Speaker identification error:', error);
+        throw error;
+    }
+}
+
+/**
+ * 🌍 TRANSLATION
+ * Translate transcripts to multiple languages
+ *
+ * @param {string} transcriptId - AssemblyAI transcript ID
+ * @param {Array<string>} targetLanguages - Array of language codes (e.g., ['es', 'de', 'id'])
+ * @param {boolean} formal - Use formal language style
+ * @param {object} assemblyClient - AssemblyAI client instance
+ * @returns {object} - Translated texts
+ */
+async function translateTranscript(transcriptId, targetLanguages, formal = false, assemblyClient) {
+    try {
+        console.log(`🌍 Translating transcript: ${transcriptId}`);
+        console.log(`🗣️ Target languages: ${targetLanguages.join(', ')}`);
+        console.log(`📝 Formal style: ${formal}`);
+
+        // Validate input
+        if (!targetLanguages || targetLanguages.length === 0) {
+            throw new Error('target_languages is required and must not be empty');
+        }
+
+        // Build request body for Speech Understanding API
+        const requestBody = {
+            transcript_id: transcriptId,
+            speech_understanding: {
+                request: {
+                    translation: {
+                        target_languages: targetLanguages,
+                        formal: formal
+                    }
+                }
+            }
+        };
+
+        console.log('📤 Request to Speech Understanding API:', JSON.stringify(requestBody, null, 2));
+
+        // Call Speech Understanding API
+        const response = await fetch('https://llm-gateway.assemblyai.com/v1/understanding', {
+            method: 'POST',
+            headers: {
+                'Authorization': process.env.ASSEMBLYAI_API_KEY,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestBody)
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Speech Understanding API error (${response.status}): ${errorText}`);
+        }
+
+        const result = await response.json();
+
+        console.log('✅ Translation completed');
+        console.log(`📊 Translated to ${Object.keys(result.translated_texts || {}).length} languages`);
+
+        // Log sample of each translation
+        if (result.translated_texts) {
+            Object.entries(result.translated_texts).forEach(([lang, text]) => {
+                console.log(`🌐 ${lang.toUpperCase()}: ${text.substring(0, 100)}...`);
+            });
+        }
+
+        return result;
+
+    } catch (error) {
+        console.error('❌ Translation error:', error);
+        throw error;
+    }
+}
+
+/**
+ * 🔄 TRANSCRIBE + IDENTIFY + TRANSLATE (All-in-One)
+ * Complete workflow for transcription with speaker identification and translation
+ *
+ * @param {string} filePath - Path to audio file
+ * @param {object} options - Configuration options
+ * @returns {object} - Complete results with transcription, speaker identification, and translations
+ */
+async function transcribeIdentifyTranslate(filePath, options, assemblyClient, queryOne, query) {
+    try {
+        const {
+            language = 'id',
+            enableDiarization = true,
+            meetingId = null,
+            speakerType = null,          // 'name' or 'role'
+            knownSpeakers = [],          // Array of names or roles
+            translateTo = [],            // Array of language codes
+            translationFormal = false
+        } = options;
+
+        console.log('🚀 Starting COMPLETE transcription workflow...');
+        console.log(`📍 File: ${filePath}`);
+        console.log(`🌍 Language: ${language}`);
+        console.log(`🎭 Speaker Type: ${speakerType || 'none'}`);
+        console.log(`🌐 Translate to: ${translateTo.length > 0 ? translateTo.join(', ') : 'none'}`);
+
+        // Step 1: Transcribe with AssemblyAI
+        console.log('\n📝 STEP 1: Transcription...');
+        const transcriptionOptions = {
+            audio: filePath,
+            speaker_labels: enableDiarization,
+            language_code: language === 'multi' ? undefined : language,
+            language_detection: language === 'multi',
+            speech_model: "universal",
+            auto_highlights: true,
+            sentiment_analysis: true,
+            entity_detection: true,
+            auto_chapters: true,
+            format_text: true,
+            punctuate: true
+        };
+
+        // Add keyterms if meetingId provided
+        if (meetingId) {
+            const participants = await query(
+                'SELECT name FROM participants WHERE meeting_id = $1 AND deleted_at IS NULL',
+                [meetingId]
+            );
+            const meeting = await queryOne(
+                'SELECT title FROM meetings WHERE id = $1',
+                [meetingId]
+            );
+
+            const keyterms = participants.rows.map(p => p.name);
+            if (meeting && meeting.title) {
+                const titleWords = meeting.title.split(' ').filter(w => w.length > 3);
+                keyterms.push(...titleWords);
+            }
+
+            if (keyterms.length > 0) {
+                transcriptionOptions.word_boost = keyterms;
+                transcriptionOptions.boost_param = "high";
+            }
+        }
+
+        const transcript = await assemblyClient.transcripts.transcribe(transcriptionOptions);
+
+        if (transcript.status === 'error') {
+            throw new Error(`Transcription failed: ${transcript.error}`);
+        }
+
+        console.log(`✅ Transcription completed: ${transcript.id}`);
+
+        let result = {
+            transcript_id: transcript.id,
+            text: transcript.text,
+            utterances: transcript.utterances,
+            auto_highlights: transcript.auto_highlights_result,
+            sentiment_analysis: transcript.sentiment_analysis_results,
+            entities: transcript.entities,
+            chapters: transcript.chapters
+        };
+
+        // Step 2: Speaker Identification (if requested)
+        if (speakerType && enableDiarization) {
+            console.log('\n🎭 STEP 2: Speaker Identification...');
+            const identificationResult = await identifySpeakers(
+                transcript.id,
+                speakerType,
+                knownSpeakers,
+                assemblyClient
+            );
+
+            result.speaker_identification = identificationResult.speech_understanding;
+            result.utterances = identificationResult.utterances; // Update with identified speakers
+            console.log('✅ Speaker identification completed');
+        }
+
+        // Step 3: Translation (if requested)
+        if (translateTo.length > 0) {
+            console.log('\n🌍 STEP 3: Translation...');
+            const translationResult = await translateTranscript(
+                transcript.id,
+                translateTo,
+                translationFormal,
+                assemblyClient
+            );
+
+            result.translated_texts = translationResult.translated_texts;
+            result.translation_info = translationResult.speech_understanding;
+            console.log('✅ Translation completed');
+        }
+
+        console.log('\n✅ COMPLETE workflow finished successfully!');
+        return result;
+
+    } catch (error) {
+        console.error('❌ Complete workflow error:', error);
+        throw error;
+    }
+}
+
 // Export functions
 module.exports = {
     transcribeWithAssemblyAIEnhanced,
-    setupEnhancements
+    setupEnhancements,
+    identifySpeakers,
+    translateTranscript,
+    transcribeIdentifyTranslate
 };

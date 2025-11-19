@@ -28,6 +28,10 @@ console.log('✅ AssemblyAI SDK initialized');
 const enhancements = require('./server-enhancements');
 console.log('✅ AssemblyAI Enhancements module loaded');
 
+// ✅ Load streaming handler
+const { initializeStreamingWebSocket } = require('./utils/streaming-handler');
+console.log('✅ Streaming handler loaded');
+
 let emailTransporter = null;
 let nodemailer = null;
 
@@ -3247,9 +3251,232 @@ enhancements.setupEnhancements(app, assemblyClient, authMiddleware, query, query
 
 console.log('✅ Enhanced endpoints configured');
 
+// ==================== SPEAKER IDENTIFICATION & TRANSLATION ENDPOINTS ====================
+
+/**
+ * 🎭 POST /api/transcripts/:transcript_id/identify-speakers
+ * Identify speakers by name or role
+ */
+app.post('/api/transcripts/:transcript_id/identify-speakers', authMiddleware, async (req, res) => {
+    try {
+        const { transcript_id } = req.params;
+        const { speaker_type = 'name', known_values = [] } = req.body;
+
+        console.log(`🎭 Speaker identification request for transcript: ${transcript_id}`);
+
+        // Validate
+        if (!['name', 'role'].includes(speaker_type)) {
+            return res.status(400).json({
+                success: false,
+                error: 'speaker_type must be either "name" or "role"'
+            });
+        }
+
+        // Call speaker identification
+        const result = await enhancements.identifySpeakers(
+            transcript_id,
+            speaker_type,
+            known_values,
+            assemblyClient
+        );
+
+        res.json({
+            success: true,
+            transcript_id,
+            speaker_type,
+            utterances: result.utterances,
+            speaker_identification: result.speech_understanding
+        });
+
+    } catch (error) {
+        console.error('❌ Speaker identification error:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+/**
+ * 🌍 POST /api/transcripts/:transcript_id/translate
+ * Translate transcript to multiple languages
+ */
+app.post('/api/transcripts/:transcript_id/translate', authMiddleware, async (req, res) => {
+    try {
+        const { transcript_id } = req.params;
+        const { target_languages = [], formal = false } = req.body;
+
+        console.log(`🌍 Translation request for transcript: ${transcript_id}`);
+        console.log(`Target languages: ${target_languages.join(', ')}`);
+
+        // Validate
+        if (!target_languages || target_languages.length === 0) {
+            return res.status(400).json({
+                success: false,
+                error: 'target_languages is required and must be a non-empty array'
+            });
+        }
+
+        // Call translation
+        const result = await enhancements.translateTranscript(
+            transcript_id,
+            target_languages,
+            formal,
+            assemblyClient
+        );
+
+        res.json({
+            success: true,
+            transcript_id,
+            original_text: result.text,
+            translated_texts: result.translated_texts,
+            translation_info: result.speech_understanding
+        });
+
+    } catch (error) {
+        console.error('❌ Translation error:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+/**
+ * 🔄 POST /api/transcribe/complete
+ * Complete workflow: Transcribe + Identify Speakers + Translate
+ */
+app.post('/api/transcribe/complete', authMiddleware, upload.single('audio'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                error: 'No audio file provided'
+            });
+        }
+
+        const {
+            meeting_id,
+            language = 'id',
+            enable_diarization = 'true',
+            speaker_type = null,
+            known_speakers = '[]',
+            translate_to = '[]',
+            translation_formal = 'false'
+        } = req.body;
+
+        if (!meeting_id) {
+            fs.unlinkSync(req.file.path);
+            return res.status(400).json({
+                success: false,
+                error: 'Meeting ID required'
+            });
+        }
+
+        // Validate meeting exists and user has access
+        const meetingCheck = await queryOne(
+            'SELECT id FROM meetings WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL',
+            [meeting_id, req.userId]
+        );
+
+        if (!meetingCheck) {
+            fs.unlinkSync(req.file.path);
+            return res.status(404).json({
+                success: false,
+                error: 'Meeting not found'
+            });
+        }
+
+        console.log(`🚀 COMPLETE transcription workflow for meeting: ${meeting_id}`);
+
+        // Parse arrays
+        const knownSpeakersArray = JSON.parse(known_speakers);
+        const translateToArray = JSON.parse(translate_to);
+
+        // Call complete workflow
+        const result = await enhancements.transcribeIdentifyTranslate(
+            req.file.path,
+            {
+                language,
+                enableDiarization: enable_diarization === 'true',
+                meetingId: meeting_id,
+                speakerType: speaker_type,
+                knownSpeakers: knownSpeakersArray,
+                translateTo: translateToArray,
+                translationFormal: translation_formal === 'true'
+            },
+            assemblyClient,
+            queryOne,
+            query
+        );
+
+        // Save transcripts to database
+        if (result.utterances && result.utterances.length > 0) {
+            let savedTranscripts = [];
+            for (let i = 0; i < result.utterances.length; i++) {
+                const utterance = result.utterances[i];
+
+                const saved = await queryOne(
+                    `INSERT INTO transcripts (meeting_id, speaker, text, start_time, end_time, sequence_number, confidence_score, sentiment, sentiment_score)
+                     VALUES ($1, $2, $3, $4, $5, $6, $7, 'NEUTRAL', 0.5)
+                     RETURNING *`,
+                    [
+                        meeting_id,
+                        utterance.speaker,
+                        utterance.text,
+                        utterance.start,
+                        utterance.end,
+                        i,
+                        utterance.confidence || 0.95
+                    ]
+                );
+
+                savedTranscripts.push(saved);
+            }
+
+            console.log(`💾 Saved ${savedTranscripts.length} transcripts to database`);
+        }
+
+        // Update meeting status
+        await query('UPDATE meetings SET status = $1 WHERE id = $2', ['completed', meeting_id]);
+
+        res.json({
+            success: true,
+            message: 'Complete workflow finished successfully',
+            transcript_id: result.transcript_id,
+            text: result.text,
+            utterances: result.utterances,
+            speaker_identification: result.speaker_identification,
+            translated_texts: result.translated_texts,
+            auto_highlights: result.auto_highlights,
+            sentiment_analysis: result.sentiment_analysis,
+            entities: result.entities,
+            chapters: result.chapters
+        });
+
+    } catch (error) {
+        console.error('❌ Complete workflow error:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    } finally {
+        // Clean up uploaded file
+        if (req.file && fs.existsSync(req.file.path)) {
+            try {
+                fs.unlinkSync(req.file.path);
+            } catch (err) {
+                console.error('Error deleting file:', err);
+            }
+        }
+    }
+});
+
+console.log('✅ Speaker Identification & Translation endpoints configured');
+
 // ==================== START SERVER ====================
 
-app.listen(PORT, HOST, () => {
+const httpServer = app.listen(PORT, HOST, () => {
     console.log('\n');
     console.log('╔════════════════════════════════════════════════════════════╗');
     console.log('║   ⚡ naraMEET v2.0 ULTIMATE - AssemblyAI Edition ⚡       ║');
@@ -3272,12 +3499,13 @@ app.listen(PORT, HOST, () => {
 });
 
 // Start HTTPS server (for microphone access on LAN)
+let httpsServer = null;
 try {
     const privateKey = fs.readFileSync('/app/ssl-certs/server.key', 'utf8');
     const certificate = fs.readFileSync('/app/ssl-certs/server.crt', 'utf8');
     const credentials = { key: privateKey, cert: certificate };
 
-    const httpsServer = https.createServer(credentials, app);
+    httpsServer = https.createServer(credentials, app);
     httpsServer.listen(HTTPS_PORT, HOST, () => {
         console.log(`╔════════════════════════════════════════════════════════════╗`);
         console.log(`║  🔒 HTTPS Server: https://${HOST}:${HTTPS_PORT}                   ║`);
@@ -3288,7 +3516,21 @@ try {
 } catch (error) {
     console.log('⚠️  HTTPS not available (SSL certificates not found)');
     console.log('   Recording will only work on http://localhost:8000');
-    console.log('   Error details:', error.message); // ← TAMBAH INI untuk debug
+    console.log('   Error details:', error.message);
+}
+
+// ==================== INITIALIZE STREAMING WEBSOCKET ====================
+// Initialize WebSocket server for real-time streaming
+let streamingServer;
+try {
+    // Use HTTPS server if available, otherwise use HTTP server
+    const serverForWs = httpsServer || httpServer;
+    const { wss, sessionManager } = initializeStreamingWebSocket(serverForWs, assemblyClient, query, queryOne);
+    streamingServer = { wss, sessionManager };
+    console.log(`✅ Streaming WebSocket initialized on ${httpsServer ? 'HTTPS' : 'HTTP'} server`);
+    console.log('   🌊 Real-time transcription: ws://localhost:3000/api/streaming/ws');
+} catch (error) {
+    console.error('❌ Failed to initialize streaming WebSocket:', error.message);
 }
 
 module.exports = app;
