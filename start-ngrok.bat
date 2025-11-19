@@ -35,10 +35,7 @@ echo.
 echo ⏳ Please wait, getting your public URL...
 echo.
 
-REM Change to ngrok directory (adjust path if needed)
-cd C:\ngrok
-
-REM Start ngrok
-ngrok http 8000
+REM Start ngrok (using downloaded path)
+"C:\Users\lenovo\Downloads\ngrok-v3-stable-windows-amd64\ngrok.exe" http 8000
 
 pause
