@@ -1,0 +1,2319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>naraMeet - AI Meeting Minutes</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <script src="/api-config.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            /* Professional soft color scheme */
+            --primary-blue: #4A90E2;
+            --primary-green: #50C878;
+            --bg-light: #F8F9FA;
+            --text-gray: #6C757D;
+            --text-dark: #2C3E50;
+            --border-light: #DEE2E6;
+            --white: #FFFFFF;
+            --success: #28A745;
+            --danger: #DC3545;
+            --warning: #FFC107;
+            --info: #17A2B8;
+            --shadow: rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header */
+        .header {
+            background: var(--white);
+            padding: 30px;
+            margin-bottom: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px var(--shadow);
+            text-align: center;
+            position: relative;
+        }
+
+        .logo {
+            font-size: 2.5em;
+            font-weight: 600;
+            color: var(--primary-blue);
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: var(--text-gray);
+            font-size: 1.1em;
+        }
+
+        .user-info {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 0.95em;
+            color: var(--text-gray);
+        }
+
+        .logout-btn {
+            padding: 8px 20px;
+            background: var(--white);
+            border: 2px solid var(--danger);
+            color: var(--danger);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .logout-btn:hover {
+            background: var(--danger);
+            color: var(--white);
+        }
+
+        /* Navigation - Floating Style */
+        .nav-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            background: var(--white);
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px var(--shadow);
+        }
+
+        .tab-btn {
+            padding: 12px 24px;
+            background: var(--bg-light);
+            border: 2px solid transparent;
+            color: var(--text-gray);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.95em;
+            font-weight: 500;
+            transition: all 0.2s;
+            flex: 1;
+            min-width: 140px;
+        }
+
+        .tab-btn:hover {
+            background: #E9ECEF;
+            border-color: var(--primary-blue);
+            color: var(--primary-blue);
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, var(--primary-blue), var(--primary-green));
+            color: var(--white);
+            border-color: transparent;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--white);
+            padding: 30px;
+            margin-bottom: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px var(--shadow);
+        }
+
+        .card h2 {
+            color: var(--primary-blue);
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--border-light);
+        }
+
+        .card h3 {
+            color: var(--text-dark);
+            font-size: 1.2em;
+            margin: 20px 0 10px;
+        }
+
+        /* Form Elements */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            color: var(--text-dark);
+            font-weight: 500;
+            margin-bottom: 8px;
+            font-size: 0.95em;
+        }
+
+        input, select, textarea {
+            padding: 12px;
+            border: 2px solid var(--border-light);
+            border-radius: 8px;
+            font-size: 1em;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+        }
+
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 12px 28px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-blue), var(--primary-green));
+            color: var(--white);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--bg-light);
+            color: var(--text-dark);
+            border: 2px solid var(--border-light);
+        }
+
+        .btn-secondary:hover {
+            background: #E9ECEF;
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: var(--white);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: var(--white);
+        }
+
+        .btn-warning {
+            background: var(--warning);
+            color: var(--text-dark);
+        }
+
+        /* Content Sections */
+        .content-section {
+            display: none;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Status Messages */
+        .status-message {
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .status-success {
+            background: #D4EDDA;
+            color: #155724;
+            border: 1px solid #C3E6CB;
+        }
+
+        .status-error {
+            background: #F8D7DA;
+            color: #721C24;
+            border: 1px solid #F5C6CB;
+        }
+
+        .status-info {
+            background: #D1ECF1;
+            color: #0C5460;
+            border: 1px solid #BEE5EB;
+        }
+
+        /* Recording Controls */
+        .audio-controls {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .timer {
+            font-size: 3em;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 30px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .record-btn {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: var(--danger);
+            color: var(--white);
+            font-size: 3em;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 20px;
+        }
+
+        .record-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 16px rgba(220, 53, 69, 0.4);
+        }
+
+        .record-btn.recording {
+            background: var(--success);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
+            50% { box-shadow: 0 0 0 20px rgba(220, 53, 69, 0); }
+        }
+
+        /* Participant List */
+        .participant-item {
+            background: var(--bg-light);
+            padding: 15px 20px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .participant-info {
+            flex: 1;
+        }
+
+        .participant-name {
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 5px;
+        }
+
+        .participant-details {
+            color: var(--text-gray);
+            font-size: 0.9em;
+        }
+
+        .participant-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 0.85em;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-small.danger {
+            background: var(--danger);
+            color: var(--white);
+        }
+
+        .btn-small.danger:hover {
+            background: #C82333;
+        }
+
+        /* Transcript Display */
+        .transcript-content {
+            background: var(--bg-light);
+            padding: 25px;
+            border-radius: 8px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .utterance {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: var(--white);
+            border-radius: 8px;
+            border-left: 4px solid var(--primary-blue);
+        }
+
+        .speaker-label {
+            font-weight: 600;
+            color: var(--primary-blue);
+            margin-bottom: 8px;
+        }
+
+        .utterance-text {
+            color: var(--text-dark);
+            line-height: 1.6;
+        }
+
+        .timestamp {
+            color: var(--text-gray);
+            font-size: 0.85em;
+            margin-top: 8px;
+        }
+
+        /* Highlights */
+        .highlight-item {
+            background: #FFF3CD;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            border-left: 4px solid var(--warning);
+        }
+
+        .highlight-text {
+            color: var(--text-dark);
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .highlight-time {
+            color: var(--text-gray);
+            font-size: 0.85em;
+        }
+
+        /* Analysis Cards */
+        .analysis-section {
+            background: var(--bg-light);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .analysis-section h3 {
+            color: var(--primary-blue);
+            margin-bottom: 15px;
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 6px 14px;
+            background: var(--primary-blue);
+            color: var(--white);
+            border-radius: 20px;
+            margin: 5px;
+            font-size: 0.9em;
+        }
+
+        .entity-item {
+            padding: 10px 15px;
+            background: var(--white);
+            border-radius: 6px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .entity-name {
+            font-weight: 500;
+            color: var(--text-dark);
+        }
+
+        .entity-type {
+            color: var(--text-gray);
+            font-size: 0.85em;
+            background: var(--bg-light);
+            padding: 4px 10px;
+            border-radius: 12px;
+        }
+
+        /* Export Options */
+        .export-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .export-card {
+            background: var(--bg-light);
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+        }
+
+        .export-card:hover {
+            border-color: var(--primary-blue);
+            transform: translateY(-2px);
+        }
+
+        .export-icon {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .export-label {
+            color: var(--text-dark);
+            font-weight: 500;
+        }
+
+        /* Meeting Dashboard */
+        .meeting-card {
+            background: var(--white);
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary-green);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .meeting-card:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px var(--shadow);
+        }
+
+        .meeting-title {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 8px;
+        }
+
+        .meeting-meta {
+            color: var(--text-gray);
+            font-size: 0.9em;
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .meeting-actions {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+        }
+
+        /* Audio Visualizer */
+        .audio-visualizer {
+            margin-top: 30px;
+            padding: 25px;
+            background: var(--bg-light);
+            border-radius: 8px;
+        }
+
+        .db-meter-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .db-meter {
+            flex: 1;
+            height: 30px;
+            background: #E9ECEF;
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .db-meter-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--success), var(--warning), var(--danger));
+            width: 0%;
+            transition: width 0.1s;
+        }
+
+        .db-value {
+            min-width: 80px;
+            text-align: right;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .waveform-canvas {
+            width: 100%;
+            height: 100px;
+            background: var(--white);
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+
+        .audio-quality-indicator {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .quality-badge {
+            flex: 1;
+            min-width: 150px;
+            padding: 12px;
+            background: var(--white);
+            border-radius: 8px;
+            text-align: center;
+            font-size: 0.9em;
+        }
+
+        /* Enhancement Controls */
+        .enhancement-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .enhancement-option {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            background: var(--bg-light);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+        }
+
+        .enhancement-option:hover {
+            border-color: var(--primary-blue);
+        }
+
+        .enhancement-option.active {
+            background: #D1ECF1;
+            border-color: var(--info);
+        }
+
+        .enhancement-option input[type="checkbox"] {
+            cursor: pointer;
+        }
+
+        /* Info Boxes */
+        .info-box {
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid;
+        }
+
+        .info-box.success {
+            background: #D4EDDA;
+            border-color: var(--success);
+            color: #155724;
+        }
+
+        .info-box.info {
+            background: #D1ECF1;
+            border-color: var(--info);
+            color: #0C5460;
+        }
+
+        .info-box.warning {
+            background: #FFF3CD;
+            border-color: var(--warning);
+            color: #856404;
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--border-light);
+            border-top-color: var(--primary-blue);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+
+            .header {
+                padding: 20px;
+            }
+
+            .logo {
+                font-size: 2em;
+            }
+
+            .user-info {
+                position: static;
+                justify-content: center;
+                margin-top: 15px;
+            }
+
+            .nav-tabs {
+                flex-direction: column;
+            }
+
+            .tab-btn {
+                width: 100%;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .timer {
+                font-size: 2em;
+            }
+
+            .record-btn {
+                width: 80px;
+                height: 80px;
+                font-size: 2em;
+            }
+        }
+
+        /* Automation Styles */
+        .automation-card {
+            background: var(--bg-light);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .automation-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px;
+            background: var(--white);
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 60px;
+            height: 30px;
+            background: #CCC;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .toggle-switch.active {
+            background: var(--success);
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 24px;
+            height: 24px;
+            background: var(--white);
+            border-radius: 50%;
+            transition: transform 0.3s;
+        }
+
+        .toggle-switch.active::after {
+            transform: translateX(30px);
+        }
+
+        /* Contact Library */
+        .contact-item {
+            background: var(--bg-light);
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .contact-info {
+            flex: 1;
+        }
+
+        .contact-name {
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 5px;
+        }
+
+        .contact-details {
+            color: var(--text-gray);
+            font-size: 0.9em;
+        }
+
+        .contact-actions {
+            display: flex;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">naraMeet</div>
+            <div class="subtitle">AI-Powered Meeting Minutes Assistant</div>
+            <div class="user-info">
+                <span id="userEmail">user@example.com</span>
+                <button class="logout-btn" onclick="logout()">Logout</button>
+            </div>
+        </div>
+
+        <!-- Dashboard View -->
+        <div id="dashboard-view">
+            <div class="card">
+                <h2>📊 My Meetings</h2>
+                <div style="margin-bottom: 20px;">
+                    <button class="btn btn-primary" onclick="createNewMeeting()">
+                        ➕ Create New Meeting
+                    </button>
+                </div>
+                <div id="meetingsList">
+                    <div style="text-align: center; padding: 40px; color: var(--text-gray);">
+                        No meetings yet. Create your first meeting!
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Manage View -->
+        <div id="manage-view" class="hidden">
+            <div style="margin-bottom: 20px;">
+                <button class="btn btn-secondary" onclick="backToDashboard()">
+                    ← Back to Dashboard
+                </button>
+            </div>
+
+            <!-- Navigation Tabs -->
+            <div class="nav-tabs">
+                <button class="tab-btn active" onclick="switchTab('setup')">
+                    🚀 Setup
+                </button>
+                <button class="tab-btn" onclick="switchTab('recording')">
+                    🎙️ Recording
+                </button>
+                <button class="tab-btn" onclick="switchTab('transcript')">
+                    📝 Transcript
+                </button>
+                <button class="tab-btn" onclick="switchTab('highlights')">
+                    ✨ Highlights
+                </button>
+                <button class="tab-btn" onclick="switchTab('analysis')">
+                    🔍 Analysis
+                </button>
+                <button class="tab-btn" onclick="switchTab('export')">
+                    📤 Export
+                </button>
+                <button class="tab-btn" onclick="switchTab('automation')">
+                    ⚙️ Automation
+                </button>
+            </div>
+
+            <!-- Status Message -->
+            <div id="globalStatus" class="status-message hidden"></div>
+
+            <!-- SETUP TAB -->
+            <div id="setup" class="content-section active">
+                <div class="card">
+                    <h2>Meeting Information</h2>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="meetingTitle">📋 Meeting Title</label>
+                            <input type="text" id="meetingTitle" placeholder="e.g., Q4 Planning Meeting" />
+                        </div>
+                        <div class="form-group">
+                            <label for="meetingDate">📅 Date & Time</label>
+                            <input type="datetime-local" id="meetingDate" />
+                        </div>
+                        <div class="form-group">
+                            <label for="meetingLocation">📍 Location</label>
+                            <input type="text" id="meetingLocation" placeholder="e.g., Meeting Room A" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>Add Participants</h2>
+
+                    <div class="form-group">
+                        <label>👥 Invite User from System</label>
+                        <select id="systemUserSelect" onchange="selectSystemUser(this.value)">
+                            <option value="">-- Select user to invite --</option>
+                        </select>
+                    </div>
+
+                    <div style="text-align: center; margin: 20px 0; color: var(--text-gray);">
+                        OR
+                    </div>
+
+                    <div class="form-group">
+                        <label>🔍 Select from Contacts Library</label>
+                        <select id="contactSelect" onchange="selectContact(this.value)">
+                            <option value="">-- Select existing contact --</option>
+                        </select>
+                    </div>
+
+                    <div style="text-align: center; margin: 20px 0; color: var(--text-gray);">
+                        OR add new contact
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="participantName">👤 Full Name *</label>
+                            <input type="text" id="participantName" placeholder="Enter full name" />
+                        </div>
+                        <div class="form-group">
+                            <label for="participantEmail">📧 Email *</label>
+                            <input type="email" id="participantEmail" placeholder="name@company.com" />
+                        </div>
+                        <div class="form-group">
+                            <label for="participantPhone">📱 Phone (Optional)</label>
+                            <input type="tel" id="participantPhone" placeholder="+62 xxx-xxxx-xxxx" />
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 20px;">
+                        <button class="btn btn-primary" onclick="addParticipant()">
+                            ➕ Add Participant
+                        </button>
+                        <button class="btn btn-secondary" onclick="saveToContactLibrary()">
+                            💾 Save to Contact Library
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>📚 My Contacts Library</h2>
+                    <div id="contactsLibraryList">
+                        <div style="text-align: center; color: var(--text-gray); padding: 30px;">
+                            Loading contacts...
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>Registered Participants</h2>
+                    <div id="participantList">
+                        <div style="text-align: center; color: var(--text-gray); padding: 30px;">
+                            No participants added yet.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>🎥 Video Conference (Jitsi Meet)</h2>
+                    <div class="info-box info">
+                        <strong>✨ Features:</strong>
+                        <ul style="margin-top: 10px; padding-left: 20px;">
+                            <li>🎤 High-quality audio & video</li>
+                            <li>🎭 Screen sharing & presentation</li>
+                            <li>💬 Live chat & reactions</li>
+                            <li>🎬 Meeting recording</li>
+                            <li>🔐 Secure & encrypted</li>
+                        </ul>
+                    </div>
+                    <div id="videoMeetingInfo" class="hidden">
+                        <p><strong>Meeting Room:</strong> <span id="jitsiRoomName">-</span></p>
+                        <p><strong>Status:</strong> <span id="jitsiStatus">Ready</span></p>
+                    </div>
+                    <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-top: 20px;">
+                        <button class="btn btn-primary" onclick="startVideoMeeting()" id="startVideoBtn">
+                            🚀 Start Video Meeting
+                        </button>
+                        <button class="btn btn-secondary hidden" onclick="copyMeetingLink()" id="copyLinkBtn">
+                            📋 Copy Meeting Link
+                        </button>
+                        <button class="btn btn-secondary hidden" onclick="openVideoMeeting()" id="openVideoBtn">
+                            🎥 Open Meeting
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RECORDING TAB -->
+            <div id="recording" class="content-section">
+                <div class="card">
+                    <h2>Audio Recording</h2>
+                    <div class="audio-controls">
+                        <div class="timer" id="recordTimer">00:00:00</div>
+                        <div class="record-btn" id="recordBtn" onclick="toggleRecording()">⏺</div>
+                        <p style="margin: 25px 0;">
+                            <span id="recordStatus">Click to start recording</span>
+                        </p>
+                    </div>
+
+                    <div class="audio-visualizer hidden" id="audioVisualizer">
+                        <h3>🎙️ Audio Monitor</h3>
+                        <div class="db-meter-container">
+                            <div>Level:</div>
+                            <div class="db-meter">
+                                <div class="db-meter-fill" id="dbMeterFill"></div>
+                            </div>
+                            <div class="db-value" id="dbValue">-∞ dB</div>
+                        </div>
+                        <canvas class="waveform-canvas" id="waveformCanvas"></canvas>
+                        <div class="audio-quality-indicator">
+                            <div class="quality-badge">
+                                <div id="qualityText">Waiting...</div>
+                            </div>
+                            <div class="quality-badge">
+                                <div id="peakLevel">Peak: -∞ dB</div>
+                            </div>
+                            <div class="quality-badge">
+                                <div id="clippingWarning">No Clipping</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="text-align: center; margin: 35px 0;">
+                        <p style="color: var(--text-gray); margin-bottom: 20px;">OR</p>
+                        <label for="audioFile" class="btn btn-secondary">
+                            📁 Upload Audio File
+                        </label>
+                        <input type="file" id="audioFile" accept="audio/*" style="display: none;" onchange="handleAudioUpload(this)" />
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>🎛️ Audio Enhancement</h2>
+                    <p style="color: var(--text-gray); margin-bottom: 20px;">
+                        Improve audio quality before transcription for better accuracy
+                    </p>
+                    <div class="enhancement-controls">
+                        <div class="enhancement-option active" id="normalizeToggle" onclick="toggleEnhancement('normalize')">
+                            <input type="checkbox" id="enableNormalize" checked style="margin-right: 10px;">
+                            <div>
+                                <strong style="color: var(--primary-blue);">🔊 Volume Normalization</strong>
+                                <div style="font-size: 0.9em; color: var(--text-gray); margin-top: 5px;">
+                                    Auto-adjust volume for sounds that are too quiet or loud
+                                </div>
+                            </div>
+                        </div>
+                        <div class="enhancement-option active" id="noiseToggle" onclick="toggleEnhancement('noise')">
+                            <input type="checkbox" id="enableNoiseReduction" checked style="margin-right: 10px;">
+                            <div>
+                                <strong style="color: var(--primary-green);">🎵 Noise Reduction</strong>
+                                <div style="font-size: 0.9em; color: var(--text-gray); margin-top: 5px;">
+                                    Reduce background noise and static
+                                </div>
+                            </div>
+                        </div>
+                        <div class="enhancement-option" id="compressToggle" onclick="toggleEnhancement('compress')">
+                            <input type="checkbox" id="enableCompression" style="margin-right: 10px;">
+                            <div>
+                                <strong style="color: var(--info);">📉 Dynamic Range Compression</strong>
+                                <div style="font-size: 0.9em; color: var(--text-gray); margin-top: 5px;">
+                                    Equalize volume differences between speakers
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="info-box info" style="margin-top: 20px;">
+                        <strong>💡 Recommendations:</strong>
+                        <p style="margin-top: 8px;">
+                            • Minimum recording level: <strong>-30 dB</strong><br>
+                            • Optimal range: <strong>-20 dB to -6 dB</strong><br>
+                            • Avoid: <strong>0 dB</strong> (clipping/distortion)
+                        </p>
+                    </div>
+                </div>
+
+                <div class="card hidden" id="audioPlaybackCard">
+                    <h2>🔊 Audio Playback</h2>
+                    <div style="background: var(--bg-light); padding: 20px; border-radius: 8px;">
+                        <div id="audioFileName" style="font-weight: 600; margin-bottom: 10px;">recording.wav</div>
+                        <div id="audioFileInfo" style="color: var(--text-gray); margin-bottom: 15px;">
+                            Duration: 0:00 | Size: 0 MB
+                        </div>
+                        <audio id="audioPlayer" controls style="width: 100%; margin-bottom: 15px;"></audio>
+                        <div style="display: flex; gap: 10px;">
+                            <button class="btn btn-secondary" onclick="downloadAudio()">💾 Download</button>
+                            <button class="btn btn-danger" onclick="deleteAudio()">🗑️ Delete</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>🤖 Generate Transcript & AI Analysis</h2>
+                    <p style="color: var(--text-gray); margin-bottom: 20px;">
+                        Process the recorded audio with AI to generate transcript and analysis
+                    </p>
+                    <button class="btn btn-primary" onclick="generateTranscript()" id="generateBtn">
+                        ✨ Generate with AI
+                    </button>
+                    <div id="transcriptStatus" class="hidden" style="margin-top: 20px;">
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            <div class="spinner"></div>
+                            <div>
+                                <div style="font-weight: 600; margin-bottom: 5px;">Processing...</div>
+                                <div style="color: var(--text-gray); font-size: 0.9em;" id="transcriptProgress">
+                                    Uploading audio...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TRANSCRIPT TAB -->
+            <div id="transcript" class="content-section">
+                <div class="card">
+                    <h2>📝 Meeting Transcript</h2>
+                    <div id="transcriptContent">
+                        <div style="text-align: center; padding: 40px; color: var(--text-gray);">
+                            No transcript available. Record and transcribe a meeting first.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>🤖 AI Summary</h2>
+                    <div id="aiSummary">
+                        <div style="text-align: center; padding: 40px; color: var(--text-gray);">
+                            No summary available yet.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>📋 Action Items</h2>
+                    <div id="actionItems">
+                        <div style="text-align: center; padding: 40px; color: var(--text-gray);">
+                            No action items detected yet.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- HIGHLIGHTS TAB -->
+            <div id="highlights" class="content-section">
+                <div class="card">
+                    <h2>✨ Key Highlights</h2>
+                    <div id="highlightsContent">
+                        <div style="text-align: center; padding: 40px; color: var(--text-gray);">
+                            No highlights available. Transcribe a meeting first.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ANALYSIS TAB -->
+            <div id="analysis" class="content-section">
+                <div class="card">
+                    <h2>🔍 Detailed Analysis</h2>
+
+                    <div class="analysis-section">
+                        <h3>📊 Topics Discussed</h3>
+                        <div id="topicsContent">
+                            <div style="text-align: center; padding: 20px; color: var(--text-gray);">
+                                No topics data available yet.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="analysis-section">
+                        <h3>🏷️ Entities Detected</h3>
+                        <div id="entitiesContent">
+                            <div style="text-align: center; padding: 20px; color: var(--text-gray);">
+                                No entities detected yet.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="analysis-section">
+                        <h3>📈 Meeting Statistics</h3>
+                        <div id="statsContent">
+                            <div style="text-align: center; padding: 20px; color: var(--text-gray);">
+                                No statistics available yet.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- EXPORT TAB -->
+            <div id="export" class="content-section">
+                <div class="card">
+                    <h2>📤 Export Options</h2>
+                    <p style="color: var(--text-gray); margin-bottom: 20px;">
+                        Download your meeting minutes in various formats
+                    </p>
+                    <div class="export-options">
+                        <div class="export-card" onclick="exportAs('pdf')">
+                            <div class="export-icon">📄</div>
+                            <div class="export-label">Export as PDF</div>
+                        </div>
+                        <div class="export-card" onclick="exportAs('docx')">
+                            <div class="export-icon">📝</div>
+                            <div class="export-label">Export as DOCX</div>
+                        </div>
+                        <div class="export-card" onclick="exportAs('txt')">
+                            <div class="export-icon">📋</div>
+                            <div class="export-label">Export as TXT</div>
+                        </div>
+                        <div class="export-card" onclick="exportAs('json')">
+                            <div class="export-icon">💾</div>
+                            <div class="export-label">Export as JSON</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>📧 Email Distribution</h2>
+                    <p style="color: var(--text-gray); margin-bottom: 20px;">
+                        Send meeting minutes to participants via email
+                    </p>
+                    <div class="form-group">
+                        <label for="emailSubject">Email Subject</label>
+                        <input type="text" id="emailSubject" placeholder="Meeting Minutes - [Meeting Title]" />
+                    </div>
+                    <div class="form-group">
+                        <label for="emailBody">Additional Message (Optional)</label>
+                        <textarea id="emailBody" placeholder="Add a custom message to the email..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="includeAttachments" checked style="margin-right: 8px;">
+                            Include PDF attachment
+                        </label>
+                    </div>
+                    <button class="btn btn-primary" onclick="sendEmail()">
+                        📧 Send to All Participants
+                    </button>
+                </div>
+            </div>
+
+            <!-- AUTOMATION TAB -->
+            <div id="automation" class="content-section">
+                <div class="card">
+                    <h2>⚙️ Automation Settings</h2>
+                    <p style="color: var(--text-gray); margin-bottom: 20px;">
+                        Configure automatic actions for your meetings
+                    </p>
+
+                    <div class="automation-card">
+                        <div class="automation-toggle">
+                            <div>
+                                <strong>Auto-transcribe recordings</strong>
+                                <div style="font-size: 0.9em; color: var(--text-gray); margin-top: 5px;">
+                                    Automatically generate transcript after recording ends
+                                </div>
+                            </div>
+                            <div class="toggle-switch" id="autoTranscribe" onclick="toggleAutomation('autoTranscribe')"></div>
+                        </div>
+
+                        <div class="automation-toggle">
+                            <div>
+                                <strong>Auto-send email to participants</strong>
+                                <div style="font-size: 0.9em; color: var(--text-gray); margin-top: 5px;">
+                                    Send meeting minutes via email when ready
+                                </div>
+                            </div>
+                            <div class="toggle-switch" id="autoEmail" onclick="toggleAutomation('autoEmail')"></div>
+                        </div>
+
+                        <div class="automation-toggle">
+                            <div>
+                                <strong>Auto-export to PDF</strong>
+                                <div style="font-size: 0.9em; color: var(--text-gray); margin-top: 5px;">
+                                    Automatically generate PDF export
+                                </div>
+                            </div>
+                            <div class="toggle-switch" id="autoExport" onclick="toggleAutomation('autoExport')"></div>
+                        </div>
+
+                        <div class="automation-toggle">
+                            <div>
+                                <strong>Save to cloud storage</strong>
+                                <div style="font-size: 0.9em; color: var(--text-gray); margin-top: 5px;">
+                                    Backup transcripts to cloud automatically
+                                </div>
+                            </div>
+                            <div class="toggle-switch" id="autoBackup" onclick="toggleAutomation('autoBackup')"></div>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-primary" onclick="saveAutomation()">
+                        💾 Save Automation Settings
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentUser = null;
+        let currentMeeting = null;
+        let meetings = [];
+        let participants = [];
+        let contacts = [];
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let recordingStartTime = null;
+        let timerInterval = null;
+        let audioStream = null;
+        let audioContext = null;
+        let analyser = null;
+        let animationId = null;
+
+        // Initialize app
+        window.addEventListener('DOMContentLoaded', async () => {
+            await checkAuth();
+            await loadMeetings();
+            await loadContacts();
+            await loadSystemUsers();
+            initDateTime();
+        });
+
+        // Authentication
+        async function checkAuth() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/login.html';
+                return;
+            }
+
+            try {
+                const response = await apiRequest('/api/auth/me');
+                currentUser = response.user;
+                document.getElementById('userEmail').textContent = currentUser.email;
+            } catch (error) {
+                console.error('Auth check failed:', error);
+                window.location.href = '/login.html';
+            }
+        }
+
+        async function logout() {
+            localStorage.removeItem('token');
+            window.location.href = '/login.html';
+        }
+
+        // API Request Helper
+        async function apiRequest(url, options = {}) {
+            const token = localStorage.getItem('token');
+            const headers = {
+                'Authorization': `Bearer ${token}`,
+                ...options.headers
+            };
+
+            if (options.body && !(options.body instanceof FormData)) {
+                headers['Content-Type'] = 'application/json';
+                options.body = JSON.stringify(options.body);
+            }
+
+            const response = await fetch(url, {
+                ...options,
+                headers
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message || 'Request failed');
+            }
+
+            return response.json();
+        }
+
+        // Tab Navigation
+        function switchTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.closest('.tab-btn').classList.add('active');
+
+            // Update content sections
+            document.querySelectorAll('.content-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            document.getElementById(tabName).classList.add('active');
+
+            // Load data for specific tabs
+            if (tabName === 'highlights' && currentMeeting) {
+                loadHighlights(currentMeeting.id);
+            } else if (tabName === 'analysis' && currentMeeting) {
+                loadAnalysis(currentMeeting.id);
+            }
+        }
+
+        // Meeting Management
+        async function loadMeetings() {
+            try {
+                const response = await apiRequest('/api/meetings');
+                meetings = response.meetings || [];
+                renderMeetings();
+            } catch (error) {
+                console.error('Failed to load meetings:', error);
+                showStatus('Failed to load meetings', 'error');
+            }
+        }
+
+        function renderMeetings() {
+            const container = document.getElementById('meetingsList');
+            if (meetings.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: var(--text-gray);">
+                        No meetings yet. Create your first meeting!
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = meetings.map(meeting => `
+                <div class="meeting-card">
+                    <div class="meeting-title">${meeting.title || 'Untitled Meeting'}</div>
+                    <div class="meeting-meta">
+                        <span>📅 ${formatDate(meeting.date)}</span>
+                        <span>📍 ${meeting.location || 'No location'}</span>
+                        <span>👥 ${meeting.participants?.length || 0} participants</span>
+                    </div>
+                    <div class="meeting-actions">
+                        <button class="btn btn-primary btn-small" onclick="openMeeting('${meeting.id}')">
+                            Open
+                        </button>
+                        <button class="btn btn-danger btn-small" onclick="deleteMeeting('${meeting.id}')">
+                            Delete
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function createNewMeeting() {
+            try {
+                const response = await apiRequest('/api/meetings', {
+                    method: 'POST',
+                    body: {
+                        title: 'New Meeting',
+                        date: new Date().toISOString(),
+                        createdBy: currentUser.id
+                    }
+                });
+
+                currentMeeting = response.meeting;
+                participants = [];
+                document.getElementById('dashboard-view').classList.add('hidden');
+                document.getElementById('manage-view').classList.remove('hidden');
+                showStatus('New meeting created!', 'success');
+            } catch (error) {
+                console.error('Failed to create meeting:', error);
+                showStatus('Failed to create meeting', 'error');
+            }
+        }
+
+        async function openMeeting(meetingId) {
+            try {
+                const response = await apiRequest(`/api/meetings/${meetingId}`);
+                currentMeeting = response.meeting;
+
+                // Populate meeting data
+                document.getElementById('meetingTitle').value = currentMeeting.title || '';
+                document.getElementById('meetingDate').value = currentMeeting.date ?
+                    new Date(currentMeeting.date).toISOString().slice(0, 16) : '';
+                document.getElementById('meetingLocation').value = currentMeeting.location || '';
+
+                participants = currentMeeting.participants || [];
+                renderParticipants();
+
+                document.getElementById('dashboard-view').classList.add('hidden');
+                document.getElementById('manage-view').classList.remove('hidden');
+
+                // Load transcript if available
+                if (currentMeeting.transcriptId) {
+                    await loadTranscript(currentMeeting.id);
+                    await loadHighlights(currentMeeting.id);
+                    await loadAnalysis(currentMeeting.id);
+                }
+            } catch (error) {
+                console.error('Failed to open meeting:', error);
+                showStatus('Failed to open meeting', 'error');
+            }
+        }
+
+        async function deleteMeeting(meetingId) {
+            if (!confirm('Are you sure you want to delete this meeting?')) return;
+
+            try {
+                await apiRequest(`/api/meetings/${meetingId}`, { method: 'DELETE' });
+                await loadMeetings();
+                showStatus('Meeting deleted', 'success');
+            } catch (error) {
+                console.error('Failed to delete meeting:', error);
+                showStatus('Failed to delete meeting', 'error');
+            }
+        }
+
+        function backToDashboard() {
+            document.getElementById('manage-view').classList.add('hidden');
+            document.getElementById('dashboard-view').classList.remove('hidden');
+            currentMeeting = null;
+            participants = [];
+            loadMeetings();
+        }
+
+        // Participants Management
+        async function loadSystemUsers() {
+            try {
+                const response = await apiRequest('/api/users');
+                const select = document.getElementById('systemUserSelect');
+                select.innerHTML = '<option value="">-- Select user to invite --</option>';
+                response.users.forEach(user => {
+                    if (user.id !== currentUser.id) {
+                        select.innerHTML += `<option value="${user.id}">${user.name} (${user.email})</option>`;
+                    }
+                });
+            } catch (error) {
+                console.error('Failed to load users:', error);
+            }
+        }
+
+        async function selectSystemUser(userId) {
+            if (!userId) return;
+            try {
+                const response = await apiRequest(`/api/users/${userId}`);
+                const user = response.user;
+                document.getElementById('participantName').value = user.name;
+                document.getElementById('participantEmail').value = user.email;
+                document.getElementById('participantPhone').value = user.phone || '';
+            } catch (error) {
+                console.error('Failed to load user:', error);
+            }
+        }
+
+        async function loadContacts() {
+            try {
+                const response = await apiRequest('/api/contacts');
+                contacts = response.contacts || [];
+                renderContactsLibrary();
+                updateContactSelect();
+            } catch (error) {
+                console.error('Failed to load contacts:', error);
+            }
+        }
+
+        function updateContactSelect() {
+            const select = document.getElementById('contactSelect');
+            select.innerHTML = '<option value="">-- Select existing contact --</option>';
+            contacts.forEach(contact => {
+                select.innerHTML += `<option value="${contact.id}">${contact.name} (${contact.email})</option>`;
+            });
+        }
+
+        function selectContact(contactId) {
+            if (!contactId) return;
+            const contact = contacts.find(c => c.id === contactId);
+            if (contact) {
+                document.getElementById('participantName').value = contact.name;
+                document.getElementById('participantEmail').value = contact.email;
+                document.getElementById('participantPhone').value = contact.phone || '';
+            }
+        }
+
+        function renderContactsLibrary() {
+            const container = document.getElementById('contactsLibraryList');
+            if (contacts.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; color: var(--text-gray); padding: 30px;">
+                        No contacts saved yet.
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = contacts.map(contact => `
+                <div class="contact-item">
+                    <div class="contact-info">
+                        <div class="contact-name">${contact.name}</div>
+                        <div class="contact-details">
+                            📧 ${contact.email}
+                            ${contact.phone ? `• 📱 ${contact.phone}` : ''}
+                        </div>
+                    </div>
+                    <div class="contact-actions">
+                        <button class="btn-small btn-primary" onclick="selectContactToAdd('${contact.id}')">
+                            Add
+                        </button>
+                        <button class="btn-small danger" onclick="deleteContact('${contact.id}')">
+                            Delete
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function selectContactToAdd(contactId) {
+            selectContact(contactId);
+        }
+
+        async function saveToContactLibrary() {
+            const name = document.getElementById('participantName').value.trim();
+            const email = document.getElementById('participantEmail').value.trim();
+            const phone = document.getElementById('participantPhone').value.trim();
+
+            if (!name || !email) {
+                showStatus('Please enter name and email', 'error');
+                return;
+            }
+
+            try {
+                await apiRequest('/api/contacts', {
+                    method: 'POST',
+                    body: { name, email, phone }
+                });
+                await loadContacts();
+                showStatus('Contact saved to library!', 'success');
+            } catch (error) {
+                console.error('Failed to save contact:', error);
+                showStatus('Failed to save contact', 'error');
+            }
+        }
+
+        async function deleteContact(contactId) {
+            if (!confirm('Delete this contact?')) return;
+            try {
+                await apiRequest(`/api/contacts/${contactId}`, { method: 'DELETE' });
+                await loadContacts();
+                showStatus('Contact deleted', 'success');
+            } catch (error) {
+                console.error('Failed to delete contact:', error);
+                showStatus('Failed to delete contact', 'error');
+            }
+        }
+
+        async function addParticipant() {
+            const name = document.getElementById('participantName').value.trim();
+            const email = document.getElementById('participantEmail').value.trim();
+            const phone = document.getElementById('participantPhone').value.trim();
+
+            if (!name || !email) {
+                showStatus('Please enter name and email', 'error');
+                return;
+            }
+
+            if (!currentMeeting) {
+                showStatus('Please create a meeting first', 'error');
+                return;
+            }
+
+            try {
+                await apiRequest(`/api/meetings/${currentMeeting.id}/participants`, {
+                    method: 'POST',
+                    body: { name, email, phone }
+                });
+
+                // Reload meeting to get updated participants
+                await openMeeting(currentMeeting.id);
+
+                // Clear form
+                document.getElementById('participantName').value = '';
+                document.getElementById('participantEmail').value = '';
+                document.getElementById('participantPhone').value = '';
+                document.getElementById('systemUserSelect').value = '';
+                document.getElementById('contactSelect').value = '';
+
+                showStatus('Participant added!', 'success');
+            } catch (error) {
+                console.error('Failed to add participant:', error);
+                showStatus('Failed to add participant', 'error');
+            }
+        }
+
+        function renderParticipants() {
+            const container = document.getElementById('participantList');
+            if (participants.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; color: var(--text-gray); padding: 30px;">
+                        No participants added yet.
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = participants.map(p => `
+                <div class="participant-item">
+                    <div class="participant-info">
+                        <div class="participant-name">${p.name}</div>
+                        <div class="participant-details">
+                            📧 ${p.email}
+                            ${p.phone ? `• 📱 ${p.phone}` : ''}
+                        </div>
+                    </div>
+                    <div class="participant-actions">
+                        <button class="btn-small danger" onclick="removeParticipant('${p.id}')">
+                            Remove
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function removeParticipant(participantId) {
+            try {
+                await apiRequest(`/api/meetings/${currentMeeting.id}/participants/${participantId}`, {
+                    method: 'DELETE'
+                });
+                await openMeeting(currentMeeting.id);
+                showStatus('Participant removed', 'success');
+            } catch (error) {
+                console.error('Failed to remove participant:', error);
+                showStatus('Failed to remove participant', 'error');
+            }
+        }
+
+        // Video Conference (Jitsi)
+        async function startVideoMeeting() {
+            if (!currentMeeting) {
+                showStatus('Please create a meeting first', 'error');
+                return;
+            }
+
+            try {
+                const response = await apiRequest(`/api/meetings/${currentMeeting.id}/video/start`, {
+                    method: 'POST'
+                });
+
+                document.getElementById('jitsiRoomName').textContent = response.roomName;
+                document.getElementById('jitsiStatus').textContent = 'Active';
+                document.getElementById('videoMeetingInfo').classList.remove('hidden');
+                document.getElementById('copyLinkBtn').classList.remove('hidden');
+                document.getElementById('openVideoBtn').classList.remove('hidden');
+
+                showStatus('Video meeting started!', 'success');
+            } catch (error) {
+                console.error('Failed to start video meeting:', error);
+                showStatus('Failed to start video meeting', 'error');
+            }
+        }
+
+        function copyMeetingLink() {
+            const roomName = document.getElementById('jitsiRoomName').textContent;
+            const link = `https://8x8.vc/${roomName}`;
+            navigator.clipboard.writeText(link);
+            showStatus('Meeting link copied!', 'success');
+        }
+
+        function openVideoMeeting() {
+            const roomName = document.getElementById('jitsiRoomName').textContent;
+            window.open(`https://8x8.vc/${roomName}`, '_blank');
+        }
+
+        // Recording Functions
+        async function toggleRecording() {
+            if (!mediaRecorder || mediaRecorder.state === 'inactive') {
+                await startRecording();
+            } else {
+                stopRecording();
+            }
+        }
+
+        async function startRecording() {
+            try {
+                audioStream = await navigator.mediaDevices.getUserMedia({
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    }
+                });
+
+                mediaRecorder = new MediaRecorder(audioStream);
+                audioChunks = [];
+
+                mediaRecorder.ondataavailable = (event) => {
+                    audioChunks.push(event.data);
+                };
+
+                mediaRecorder.onstop = async () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                    await saveAudio(audioBlob);
+                    stopAudioVisualization();
+                };
+
+                mediaRecorder.start();
+                recordingStartTime = Date.now();
+                startTimer();
+                startAudioVisualization(audioStream);
+
+                document.getElementById('recordBtn').classList.add('recording');
+                document.getElementById('recordBtn').textContent = '⏹';
+                document.getElementById('recordStatus').textContent = 'Recording in progress...';
+
+                showStatus('Recording started', 'success');
+            } catch (error) {
+                console.error('Failed to start recording:', error);
+                showStatus('Microphone access denied', 'error');
+            }
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+                audioStream.getTracks().forEach(track => track.stop());
+                stopTimer();
+
+                document.getElementById('recordBtn').classList.remove('recording');
+                document.getElementById('recordBtn').textContent = '⏺';
+                document.getElementById('recordStatus').textContent = 'Recording stopped';
+
+                showStatus('Recording stopped', 'info');
+            }
+        }
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                const elapsed = Date.now() - recordingStartTime;
+                const hours = Math.floor(elapsed / 3600000);
+                const minutes = Math.floor((elapsed % 3600000) / 60000);
+                const seconds = Math.floor((elapsed % 60000) / 1000);
+
+                document.getElementById('recordTimer').textContent =
+                    `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+            }, 1000);
+        }
+
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+        }
+
+        function pad(num) {
+            return num.toString().padStart(2, '0');
+        }
+
+        function startAudioVisualization(stream) {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            analyser = audioContext.createAnalyser();
+            const source = audioContext.createMediaStreamSource(stream);
+            source.connect(analyser);
+            analyser.fftSize = 2048;
+
+            document.getElementById('audioVisualizer').classList.remove('hidden');
+            visualize();
+        }
+
+        function visualize() {
+            const canvas = document.getElementById('waveformCanvas');
+            const canvasCtx = canvas.getContext('2d');
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+
+            function draw() {
+                animationId = requestAnimationFrame(draw);
+                analyser.getByteTimeDomainData(dataArray);
+
+                canvasCtx.fillStyle = 'rgb(255, 255, 255)';
+                canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+
+                canvasCtx.lineWidth = 2;
+                canvasCtx.strokeStyle = 'rgb(74, 144, 226)';
+                canvasCtx.beginPath();
+
+                const sliceWidth = canvas.width / bufferLength;
+                let x = 0;
+
+                for (let i = 0; i < bufferLength; i++) {
+                    const v = dataArray[i] / 128.0;
+                    const y = v * canvas.height / 2;
+
+                    if (i === 0) {
+                        canvasCtx.moveTo(x, y);
+                    } else {
+                        canvasCtx.lineTo(x, y);
+                    }
+
+                    x += sliceWidth;
+                }
+
+                canvasCtx.lineTo(canvas.width, canvas.height / 2);
+                canvasCtx.stroke();
+
+                // Update dB meter
+                const sum = dataArray.reduce((a, b) => a + b, 0);
+                const avg = sum / bufferLength;
+                const db = 20 * Math.log10(avg / 128);
+                const percent = Math.min(100, Math.max(0, (db + 60) / 60 * 100));
+
+                document.getElementById('dbMeterFill').style.width = percent + '%';
+                document.getElementById('dbValue').textContent = db.toFixed(1) + ' dB';
+            }
+
+            draw();
+        }
+
+        function stopAudioVisualization() {
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+            }
+            if (audioContext) {
+                audioContext.close();
+            }
+            document.getElementById('audioVisualizer').classList.add('hidden');
+        }
+
+        async function saveAudio(audioBlob) {
+            if (!currentMeeting) {
+                showStatus('Please create a meeting first', 'error');
+                return;
+            }
+
+            try {
+                const formData = new FormData();
+                formData.append('audio', audioBlob, 'recording.wav');
+                formData.append('meetingId', currentMeeting.id);
+
+                const response = await apiRequest('/api/meetings/upload-audio', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                currentMeeting.audioPath = response.audioPath;
+                displayAudioPlayback(response.audioPath);
+                showStatus('Audio saved successfully!', 'success');
+            } catch (error) {
+                console.error('Failed to save audio:', error);
+                showStatus('Failed to save audio', 'error');
+            }
+        }
+
+        async function handleAudioUpload(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            if (!currentMeeting) {
+                showStatus('Please create a meeting first', 'error');
+                return;
+            }
+
+            try {
+                const formData = new FormData();
+                formData.append('audio', file);
+                formData.append('meetingId', currentMeeting.id);
+
+                const response = await apiRequest('/api/meetings/upload-audio', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                currentMeeting.audioPath = response.audioPath;
+                displayAudioPlayback(response.audioPath);
+                showStatus('Audio uploaded successfully!', 'success');
+            } catch (error) {
+                console.error('Failed to upload audio:', error);
+                showStatus('Failed to upload audio', 'error');
+            }
+        }
+
+        function displayAudioPlayback(audioPath) {
+            const card = document.getElementById('audioPlaybackCard');
+            const player = document.getElementById('audioPlayer');
+            const fileName = document.getElementById('audioFileName');
+
+            card.classList.remove('hidden');
+            player.src = audioPath;
+            fileName.textContent = audioPath.split('/').pop();
+        }
+
+        function downloadAudio() {
+            const player = document.getElementById('audioPlayer');
+            const link = document.createElement('a');
+            link.href = player.src;
+            link.download = 'recording.wav';
+            link.click();
+        }
+
+        async function deleteAudio() {
+            if (!confirm('Delete this audio file?')) return;
+
+            try {
+                await apiRequest(`/api/meetings/${currentMeeting.id}/audio`, {
+                    method: 'DELETE'
+                });
+
+                document.getElementById('audioPlaybackCard').classList.add('hidden');
+                currentMeeting.audioPath = null;
+                showStatus('Audio deleted', 'success');
+            } catch (error) {
+                console.error('Failed to delete audio:', error);
+                showStatus('Failed to delete audio', 'error');
+            }
+        }
+
+        function toggleEnhancement(type) {
+            const toggle = document.getElementById(type + 'Toggle');
+            const checkbox = document.getElementById('enable' +
+                type.charAt(0).toUpperCase() + type.slice(1));
+
+            checkbox.checked = !checkbox.checked;
+
+            if (checkbox.checked) {
+                toggle.classList.add('active');
+            } else {
+                toggle.classList.remove('active');
+            }
+        }
+
+        // Transcript & AI
+        async function generateTranscript() {
+            if (!currentMeeting || !currentMeeting.audioPath) {
+                showStatus('Please record or upload audio first', 'error');
+                return;
+            }
+
+            try {
+                document.getElementById('generateBtn').disabled = true;
+                document.getElementById('transcriptStatus').classList.remove('hidden');
+                document.getElementById('transcriptProgress').textContent = 'Processing audio...';
+
+                const response = await apiRequest(`/api/meetings/${currentMeeting.id}/transcribe`, {
+                    method: 'POST'
+                });
+
+                currentMeeting.transcriptId = response.transcriptId;
+
+                // Poll for completion
+                await pollTranscriptStatus(response.transcriptId);
+            } catch (error) {
+                console.error('Failed to generate transcript:', error);
+                showStatus('Failed to generate transcript', 'error');
+                document.getElementById('generateBtn').disabled = false;
+                document.getElementById('transcriptStatus').classList.add('hidden');
+            }
+        }
+
+        async function pollTranscriptStatus(transcriptId) {
+            const interval = setInterval(async () => {
+                try {
+                    const response = await apiRequest(`/api/transcripts/${transcriptId}/status`);
+
+                    if (response.status === 'completed') {
+                        clearInterval(interval);
+                        document.getElementById('transcriptStatus').classList.add('hidden');
+                        document.getElementById('generateBtn').disabled = false;
+                        await loadTranscript(currentMeeting.id);
+                        await loadHighlights(currentMeeting.id);
+                        await loadAnalysis(currentMeeting.id);
+                        showStatus('Transcript generated successfully!', 'success');
+                        switchTab('transcript');
+                    } else if (response.status === 'error') {
+                        clearInterval(interval);
+                        throw new Error('Transcription failed');
+                    } else {
+                        document.getElementById('transcriptProgress').textContent =
+                            `Processing: ${response.status}...`;
+                    }
+                } catch (error) {
+                    clearInterval(interval);
+                    console.error('Polling error:', error);
+                    showStatus('Failed to check transcript status', 'error');
+                    document.getElementById('generateBtn').disabled = false;
+                    document.getElementById('transcriptStatus').classList.add('hidden');
+                }
+            }, 3000);
+        }
+
+        async function loadTranscript(meetingId) {
+            try {
+                const response = await apiRequest(`/api/meetings/${meetingId}/transcript`);
+                const transcript = response.transcript;
+
+                // Display transcript
+                if (transcript.utterances && transcript.utterances.length > 0) {
+                    document.getElementById('transcriptContent').innerHTML =
+                        transcript.utterances.map(u => `
+                            <div class="utterance">
+                                <div class="speaker-label">${u.speaker || 'Speaker'}</div>
+                                <div class="utterance-text">${u.text}</div>
+                                <div class="timestamp">${formatTime(u.start)} - ${formatTime(u.end)}</div>
+                            </div>
+                        `).join('');
+                } else {
+                    document.getElementById('transcriptContent').innerHTML = transcript.text ||
+                        '<div style="text-align: center; padding: 40px; color: var(--text-gray);">No transcript available.</div>';
+                }
+
+                // Display AI summary
+                if (transcript.summary) {
+                    document.getElementById('aiSummary').innerHTML = `
+                        <div class="analysis-section">
+                            <p>${transcript.summary}</p>
+                        </div>
+                    `;
+                }
+
+                // Display action items
+                if (transcript.action_items && transcript.action_items.length > 0) {
+                    document.getElementById('actionItems').innerHTML =
+                        transcript.action_items.map(item => `
+                            <div class="highlight-item">
+                                <div class="highlight-text">${item}</div>
+                            </div>
+                        `).join('');
+                }
+            } catch (error) {
+                console.error('Failed to load transcript:', error);
+                showStatus('Failed to load transcript', 'error');
+            }
+        }
+
+        async function loadHighlights(meetingId) {
+            try {
+                const response = await apiRequest(`/api/meetings/${meetingId}/highlights`);
+                const highlights = response.highlights || [];
+
+                if (highlights.length === 0) {
+                    document.getElementById('highlightsContent').innerHTML = `
+                        <div style="text-align: center; padding: 40px; color: var(--text-gray);">
+                            No highlights available yet.
+                        </div>
+                    `;
+                    return;
+                }
+
+                document.getElementById('highlightsContent').innerHTML =
+                    highlights.map(h => `
+                        <div class="highlight-item">
+                            <div class="highlight-text">${h.text}</div>
+                            <div class="highlight-time">${formatTime(h.start)} - ${formatTime(h.end)}</div>
+                        </div>
+                    `).join('');
+            } catch (error) {
+                console.error('Failed to load highlights:', error);
+            }
+        }
+
+        async function loadAnalysis(meetingId) {
+            try {
+                const response = await apiRequest(`/api/meetings/${meetingId}/analysis`);
+
+                // Topics
+                if (response.topics && response.topics.length > 0) {
+                    document.getElementById('topicsContent').innerHTML =
+                        response.topics.map(topic => `<span class="tag">${topic}</span>`).join('');
+                }
+
+                // Entities
+                if (response.entities && response.entities.length > 0) {
+                    document.getElementById('entitiesContent').innerHTML =
+                        response.entities.map(entity => `
+                            <div class="entity-item">
+                                <span class="entity-name">${entity.text}</span>
+                                <span class="entity-type">${entity.type}</span>
+                            </div>
+                        `).join('');
+                }
+
+                // Stats
+                if (response.stats) {
+                    document.getElementById('statsContent').innerHTML = `
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+                            <div class="entity-item">
+                                <strong>Total Duration</strong>
+                                <span>${formatDuration(response.stats.duration)}</span>
+                            </div>
+                            <div class="entity-item">
+                                <strong>Word Count</strong>
+                                <span>${response.stats.wordCount || 0}</span>
+                            </div>
+                            <div class="entity-item">
+                                <strong>Speakers</strong>
+                                <span>${response.stats.speakerCount || 0}</span>
+                            </div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Failed to load analysis:', error);
+            }
+        }
+
+        // Export Functions
+        async function exportAs(format) {
+            if (!currentMeeting) {
+                showStatus('No meeting selected', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/meetings/${currentMeeting.id}/export/${format}`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+
+                if (!response.ok) throw new Error('Export failed');
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `meeting-minutes.${format}`;
+                link.click();
+                window.URL.revokeObjectURL(url);
+
+                showStatus(`Exported as ${format.toUpperCase()}`, 'success');
+            } catch (error) {
+                console.error('Export failed:', error);
+                showStatus('Export failed', 'error');
+            }
+        }
+
+        async function sendEmail() {
+            if (!currentMeeting) {
+                showStatus('No meeting selected', 'error');
+                return;
+            }
+
+            const subject = document.getElementById('emailSubject').value ||
+                `Meeting Minutes - ${currentMeeting.title}`;
+            const body = document.getElementById('emailBody').value;
+            const includeAttachments = document.getElementById('includeAttachments').checked;
+
+            try {
+                await apiRequest(`/api/meetings/${currentMeeting.id}/send-email`, {
+                    method: 'POST',
+                    body: {
+                        subject,
+                        body,
+                        includeAttachments
+                    }
+                });
+
+                showStatus('Email sent to all participants!', 'success');
+            } catch (error) {
+                console.error('Failed to send email:', error);
+                showStatus('Failed to send email', 'error');
+            }
+        }
+
+        // Automation
+        function toggleAutomation(setting) {
+            const toggle = document.getElementById(setting);
+            toggle.classList.toggle('active');
+        }
+
+        async function saveAutomation() {
+            const settings = {
+                autoTranscribe: document.getElementById('autoTranscribe').classList.contains('active'),
+                autoEmail: document.getElementById('autoEmail').classList.contains('active'),
+                autoExport: document.getElementById('autoExport').classList.contains('active'),
+                autoBackup: document.getElementById('autoBackup').classList.contains('active')
+            };
+
+            try {
+                await apiRequest('/api/settings/automation', {
+                    method: 'POST',
+                    body: settings
+                });
+                showStatus('Automation settings saved!', 'success');
+            } catch (error) {
+                console.error('Failed to save automation settings:', error);
+                showStatus('Failed to save settings', 'error');
+            }
+        }
+
+        // Utility Functions
+        function showStatus(message, type = 'info') {
+            const statusEl = document.getElementById('globalStatus');
+            statusEl.textContent = message;
+            statusEl.className = 'status-message status-' + type;
+            statusEl.classList.remove('hidden');
+
+            setTimeout(() => {
+                statusEl.classList.add('hidden');
+            }, 5000);
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return 'No date';
+            const date = new Date(dateString);
+            return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+        }
+
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${pad(secs)}`;
+        }
+
+        function formatDuration(seconds) {
+            const hours = Math.floor(seconds / 3600);
+            const mins = Math.floor((seconds % 3600) / 60);
+            const secs = Math.floor(seconds % 60);
+
+            if (hours > 0) {
+                return `${hours}h ${mins}m ${secs}s`;
+            } else if (mins > 0) {
+                return `${mins}m ${secs}s`;
+            } else {
+                return `${secs}s`;
+            }
+        }
+
+        function initDateTime() {
+            const now = new Date();
+            const dateTimeString = now.toISOString().slice(0, 16);
+            document.getElementById('meetingDate').value = dateTimeString;
+        }
+    </script>
+</body>
+</html>

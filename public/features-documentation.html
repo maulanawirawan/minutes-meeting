@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AssemblyAI Features Documentation - naraMeet</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+            background: #F8F9FA;
+            color: #2C3E50;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: linear-gradient(135deg, #4A90E2 0%, #357ABD 100%);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+            border-radius: 12px;
+            margin-bottom: 40px;
+            box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3);
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 1.2em;
+            opacity: 0.95;
+        }
+
+        .back-button {
+            display: inline-block;
+            padding: 12px 24px;
+            background: white;
+            color: #4A90E2;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .back-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        nav {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            position: sticky;
+            top: 20px;
+            z-index: 100;
+        }
+
+        nav h3 {
+            color: #4A90E2;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        nav ul li a {
+            display: block;
+            padding: 10px 20px;
+            background: #F8F9FA;
+            color: #4A90E2;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+
+        nav ul li a:hover {
+            background: #4A90E2;
+            color: white;
+            transform: translateX(5px);
+        }
+
+        .feature-section {
+            background: white;
+            padding: 40px;
+            margin-bottom: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .feature-section h2 {
+            color: #4A90E2;
+            font-size: 2em;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #4A90E2;
+        }
+
+        .feature-section h3 {
+            color: #357ABD;
+            font-size: 1.5em;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+
+        .feature-section h4 {
+            color: #2C3E50;
+            font-size: 1.2em;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+
+        .feature-section p {
+            margin-bottom: 15px;
+            font-size: 1.05em;
+        }
+
+        .feature-section ul, .feature-section ol {
+            margin-left: 30px;
+            margin-bottom: 15px;
+        }
+
+        .feature-section li {
+            margin-bottom: 8px;
+        }
+
+        .highlight-box {
+            background: linear-gradient(135deg, #EBF5FF 0%, #F0F9FF 100%);
+            border-left: 4px solid #4A90E2;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+
+        .highlight-box h4 {
+            color: #4A90E2;
+            margin-top: 0;
+        }
+
+        .success-box {
+            background: linear-gradient(135deg, #E8F8F0 0%, #F0FCF5 100%);
+            border-left: 4px solid #50C878;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+
+        .success-box h4 {
+            color: #50C878;
+            margin-top: 0;
+        }
+
+        .code-block {
+            background: #2C3E50;
+            color: #F8F9FA;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95em;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            background: #4A90E2;
+            color: white;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin-right: 8px;
+        }
+
+        .badge.success {
+            background: #50C878;
+        }
+
+        .badge.warning {
+            background: #FFA500;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        table th, table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #E0E0E0;
+        }
+
+        table th {
+            background: #4A90E2;
+            color: white;
+            font-weight: 600;
+        }
+
+        table tr:hover {
+            background: #F8F9FA;
+        }
+
+        footer {
+            text-align: center;
+            padding: 40px 20px;
+            color: #6C757D;
+            margin-top: 40px;
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 1.8em;
+            }
+
+            nav ul {
+                flex-direction: column;
+            }
+
+            .feature-section {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/meeting-minutes-simplified.html" class="back-button">← Back to Dashboard</a>
+
+        <header>
+            <h1>🚀 AssemblyAI Features Documentation</h1>
+            <p>Comprehensive guide to all available features in naraMeet</p>
+        </header>
+
+        <nav>
+            <h3>📑 Quick Navigation</h3>
+            <ul>
+                <li><a href="#custom-formatting">Custom Formatting</a></li>
+                <li><a href="#entity-detection">Entity Detection</a></li>
+                <li><a href="#auto-chapters">Auto Chapters</a></li>
+                <li><a href="#key-phrases">Key Phrases</a></li>
+                <li><a href="#topic-detection">Topic Detection</a></li>
+                <li><a href="#summarization">Summarization</a></li>
+                <li><a href="#best-practices">Best Practices</a></li>
+            </ul>
+        </nav>
+
+        <!-- Custom Formatting Section -->
+        <section id="custom-formatting" class="feature-section">
+            <h2>📝 Custom Formatting</h2>
+            <p><span class="badge">Hidden Feature</span></p>
+
+            <p>Automatically format dates, phone numbers, emails, and more in your transcripts. This eliminates the need for post-processing and provides clean, formatted output ready for your application.</p>
+
+            <div class="highlight-box">
+                <h4>Key Capabilities</h4>
+                <ul>
+                    <li>Format dates in your preferred style (US, European, ISO, etc.)</li>
+                    <li>Standardize phone number formats with custom patterns</li>
+                    <li>Control currency and decimal precision</li>
+                    <li>Convert spelled-out text into formatted patterns</li>
+                    <li>Format URLs as hyperlinks</li>
+                    <li>Apply multiple formatting rules simultaneously</li>
+                </ul>
+            </div>
+
+            <h3>Supported Languages</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Language</th>
+                        <th>Code</th>
+                        <th>Region</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>Global English</td><td>en</td><td>All regions</td></tr>
+                    <tr><td>Australian English</td><td>en_au</td><td>Australia</td></tr>
+                    <tr><td>British English</td><td>en_uk</td><td>UK</td></tr>
+                    <tr><td>US English</td><td>en_us</td><td>United States</td></tr>
+                    <tr><td>Spanish</td><td>es</td><td>Global</td></tr>
+                    <tr><td>French</td><td>fr</td><td>Global</td></tr>
+                    <tr><td>German</td><td>de</td><td>Global</td></tr>
+                    <tr><td>And 90+ more languages...</td><td>—</td><td>—</td></tr>
+                </tbody>
+            </table>
+
+            <h3>Common Formatting Patterns</h3>
+
+            <h4>Date Formats</h4>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Pattern</th>
+                        <th>Example Output</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>mm/dd/yyyy</td><td>09/19/1991</td><td>US format (month/day/year)</td></tr>
+                    <tr><td>dd/mm/yyyy</td><td>19/09/1991</td><td>European format (day/month/year)</td></tr>
+                    <tr><td>yyyy-mm-dd</td><td>1991-09-19</td><td>ISO 8601 format</td></tr>
+                    <tr><td>dd.mm.yyyy</td><td>19.09.1991</td><td>European format with dots</td></tr>
+                </tbody>
+            </table>
+
+            <h4>Phone Number Formats</h4>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Pattern</th>
+                        <th>Example Output</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>(xxx)xxx-xxxx</td><td>(555)679-3466</td><td>Parentheses and dash</td></tr>
+                    <tr><td>xxx-xxx-xxxx</td><td>555-679-3466</td><td>Dashes only</td></tr>
+                    <tr><td>xxx.xxx.xxxx</td><td>555.679.3466</td><td>Dots separator</td></tr>
+                    <tr><td>+x(xxx)xxx-xxxx</td><td>+1(555)679-3466</td><td>International format</td></tr>
+                </tbody>
+            </table>
+
+            <div class="success-box">
+                <h4>✅ Best Practices</h4>
+                <ul>
+                    <li>Choose appropriate formats that match your application's requirements</li>
+                    <li>Combine formatting rules for comprehensive text standardization</li>
+                    <li>Test with sample data before processing large batches</li>
+                    <li>Review the mapping object to verify results</li>
+                    <li>Consider regional differences when processing international content</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Entity Detection Section -->
+        <section id="entity-detection" class="feature-section">
+            <h2>🔍 Entity Detection</h2>
+            <p><span class="badge success">Available</span> <span class="badge">99+ Languages</span></p>
+
+            <p>Automatically identify and categorize key information in transcribed audio content. Extract names of people, organizations, addresses, phone numbers, medical data, and more.</p>
+
+            <h3>Supported Entity Types</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Entity Name</th>
+                        <th>Description</th>
+                        <th>Example</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>person_name</td><td>Name of a person</td><td>Bob, Doug Jones, Dr. Kay Martinez</td></tr>
+                    <tr><td>organization</td><td>Name of an organization</td><td>CNN, McDonalds, University of Alaska</td></tr>
+                    <tr><td>location</td><td>Location reference</td><td>Lake Victoria, 145 Windsor St., 90210</td></tr>
+                    <tr><td>email_address</td><td>Email address</td><td>support@assemblyai.com</td></tr>
+                    <tr><td>phone_number</td><td>Telephone or fax number</td><td>+1-555-123-4567</td></tr>
+                    <tr><td>date</td><td>Specific calendar date</td><td>December 18</td></tr>
+                    <tr><td>medical_condition</td><td>Disease, syndrome, disorder</td><td>chronic fatigue syndrome, arrhythmia</td></tr>
+                    <tr><td>occupation</td><td>Job title or profession</td><td>professor, engineer, CPA</td></tr>
+                    <tr><td>nationality</td><td>Nationality, ethnicity, race</td><td>American, Asian, Caucasian</td></tr>
+                    <tr><td>And 40+ more entity types...</td><td>—</td><td>—</td></tr>
+                </tbody>
+            </table>
+
+            <div class="highlight-box">
+                <h4>🎯 Common Use Cases</h4>
+                <ul>
+                    <li>Auto-tagging topics and tracking competitors mentioned</li>
+                    <li>CRM enrichment with contact information</li>
+                    <li>Compliance and security monitoring</li>
+                    <li>Meeting minutes with automatic participant identification</li>
+                    <li>Customer service analytics</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Auto Chapters Section -->
+        <section id="auto-chapters" class="feature-section">
+            <h2>📚 Auto Chapters</h2>
+            <p><span class="badge success">Available</span> <span class="badge">English Only</span></p>
+
+            <p>Automatically summarize your audio into chapters. The Auto Chapters model makes it easy for users to navigate and find specific information.</p>
+
+            <h3>What Each Chapter Contains</h3>
+            <ul class="feature-list">
+                <li><strong>Summary:</strong> One-paragraph summary of the content</li>
+                <li><strong>Gist:</strong> One-line summary in a few words</li>
+                <li><strong>Headline:</strong> Single sentence summary</li>
+                <li><strong>Timestamps:</strong> Start and end times for navigation</li>
+            </ul>
+
+            <div class="highlight-box">
+                <h4>📊 Example Output</h4>
+                <p><strong>Chapter 1: "Smoke from wildfires triggering alerts"</strong></p>
+                <p><strong>Timestamps:</strong> 0:00 - 0:28</p>
+                <p><strong>Summary:</strong> Smoke from hundreds of wildfires in Canada is triggering air quality alerts throughout the US. Skylines from Maine to Maryland to Minnesota are gray and smoggy...</p>
+                <p><strong>Gist:</strong> Wildfire smoke affects US air quality</p>
+            </div>
+
+            <div class="success-box">
+                <h4>✅ Best Use Cases</h4>
+                <ul>
+                    <li>Podcast navigation and show notes</li>
+                    <li>Long meeting recordings with multiple topics</li>
+                    <li>Educational content with distinct sections</li>
+                    <li>Customer calls with multiple issues discussed</li>
+                    <li>Conference talks and presentations</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Key Phrases Section -->
+        <section id="key-phrases" class="feature-section">
+            <h2>✨ Key Phrases</h2>
+            <p><span class="badge success">Available</span> <span class="badge">English Only</span></p>
+
+            <p>Identify significant words and phrases in your transcript. Extract the most important concepts or highlights from your audio or video file.</p>
+
+            <h3>What You Get</h3>
+            <ul class="feature-list">
+                <li><strong>Text:</strong> The key phrase itself</li>
+                <li><strong>Count:</strong> Number of times it appears</li>
+                <li><strong>Rank:</strong> Relevance score (0-1, higher = more relevant)</li>
+                <li><strong>Timestamps:</strong> When and where each phrase appears</li>
+            </ul>
+
+            <div class="highlight-box">
+                <h4>📊 Example Output</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Key Phrase</th>
+                            <th>Count</th>
+                            <th>Relevance</th>
+                            <th>Usage</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>air quality alerts</td><td>3</td><td>0.08</td><td>Critical topic</td></tr>
+                        <tr><td>climate change</td><td>3</td><td>0.07</td><td>Recurring theme</td></tr>
+                        <tr><td>health conditions</td><td>2</td><td>0.06</td><td>Important point</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="success-box">
+                <h4>✅ Common Applications</h4>
+                <ul>
+                    <li>Automatic content tagging and categorization</li>
+                    <li>SEO keyword extraction for content marketing</li>
+                    <li>Meeting highlights and key takeaways</li>
+                    <li>Podcast episode summaries and tags</li>
+                    <li>Research interview analysis</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Topic Detection Section -->
+        <section id="topic-detection" class="feature-section">
+            <h2>🏷️ Topic Detection</h2>
+            <p><span class="badge success">Available</span> <span class="badge">Multiple Languages</span></p>
+
+            <p>Identify different topics in the transcript using the IAB Content Taxonomy - a standardized language for content description consisting of 698 comprehensive topics.</p>
+
+            <h3>How It Works</h3>
+            <p>The model analyzes your transcript and categorizes it into predefined topics from the IAB (Interactive Advertising Bureau) taxonomy. Topics are hierarchical with supertopic/subtopic relationships.</p>
+
+            <div class="highlight-box">
+                <h4>📊 Example Topics</h4>
+                <ul>
+                    <li><strong>NewsAndPolitics > Weather</strong> - 100% relevance</li>
+                    <li><strong>Home&Garden > IndoorEnvironmentalQuality</strong> - 90% relevance</li>
+                    <li><strong>Science > Environment</strong> - 16% relevance</li>
+                    <li><strong>MedicalHealth > DiseasesAndConditions > LungAndRespiratoryHealth</strong> - 11% relevance</li>
+                </ul>
+            </div>
+
+            <h3>Topic Categories</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Category</th>
+                        <th>Examples</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>Business & Finance</td><td>Industries, Economy, Business Operations</td></tr>
+                    <tr><td>News & Politics</td><td>Weather, Disasters, Elections, Politics</td></tr>
+                    <tr><td>Medical Health</td><td>Diseases, Conditions, Wellness, Nutrition</td></tr>
+                    <tr><td>Technology & Computing</td><td>Software, Hardware, AI, Internet</td></tr>
+                    <tr><td>Sports</td><td>Team Sports, Racing, Olympics, Fitness</td></tr>
+                    <tr><td>Entertainment</td><td>Music, Movies, TV, Gaming, Books</td></tr>
+                    <tr><td>And 690+ more topics...</td><td>—</td></tr>
+                </tbody>
+            </table>
+
+            <div class="success-box">
+                <h4>✅ Best Applications</h4>
+                <ul>
+                    <li>Content categorization for media companies</li>
+                    <li>Advertising contextual targeting</li>
+                    <li>Content recommendation systems</li>
+                    <li>Podcast episode categorization</li>
+                    <li>Meeting classification and tagging</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Summarization Section -->
+        <section id="summarization" class="feature-section">
+            <h2>📄 Summarization</h2>
+            <p><span class="badge success">Available</span> <span class="badge">English Only</span></p>
+
+            <p>Generate a single summary of your entire audio file. Control the style and format of the summary using Summary models and Summary types.</p>
+
+            <h3>Summary Types</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Type</th>
+                        <th>Description</th>
+                        <th>Best For</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>bullets</strong> (default)</td>
+                        <td>Bulleted summary with most important points</td>
+                        <td>Quick reviews, action items</td>
+                    </tr>
+                    <tr>
+                        <td><strong>bullets_verbose</strong></td>
+                        <td>Longer bullet point list</td>
+                        <td>Comprehensive summaries, detailed notes</td>
+                    </tr>
+                    <tr>
+                        <td><strong>gist</strong></td>
+                        <td>Few words summarizing entire transcript</td>
+                        <td>Tags, categories, quick labels</td>
+                    </tr>
+                    <tr>
+                        <td><strong>headline</strong></td>
+                        <td>Single sentence summary</td>
+                        <td>Email subjects, titles, quick overviews</td>
+                    </tr>
+                    <tr>
+                        <td><strong>paragraph</strong></td>
+                        <td>Single paragraph summary</td>
+                        <td>Executive summaries, reports</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Summary Models</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Model</th>
+                        <th>When to Use</th>
+                        <th>Supported Types</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>informative</strong> (default)</td>
+                        <td>Single speaker (presentations, lectures)</td>
+                        <td>bullets, bullets_verbose, headline, paragraph</td>
+                    </tr>
+                    <tr>
+                        <td><strong>conversational</strong></td>
+                        <td>2-person conversations (calls, interviews)</td>
+                        <td>bullets, bullets_verbose, headline, paragraph</td>
+                    </tr>
+                    <tr>
+                        <td><strong>catchy</strong></td>
+                        <td>Creating media titles</td>
+                        <td>headline, gist</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="highlight-box">
+                <h4>📊 Example Output (bullets)</h4>
+                <ul>
+                    <li>Smoke from hundreds of wildfires in Canada is triggering air quality alerts throughout the US</li>
+                    <li>Air pollution levels in Baltimore are considered unhealthy</li>
+                    <li>Exposure to high levels can lead to health problems</li>
+                    <li>With climate change, we are seeing more wildfires</li>
+                </ul>
+            </div>
+
+            <div class="success-box">
+                <h4>✅ Best Use Cases</h4>
+                <ul>
+                    <li>Meeting notes and action items</li>
+                    <li>Call summaries for customer service</li>
+                    <li>Executive briefings from long recordings</li>
+                    <li>Podcast episode descriptions</li>
+                    <li>Video content summaries</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Best Practices Section -->
+        <section id="best-practices" class="feature-section">
+            <h2>🎯 Best Practices for Meeting Notetakers</h2>
+            <p><span class="badge">Essential Guide</span></p>
+
+            <h3>Why AssemblyAI for Meeting Notetakers?</h3>
+            <div class="success-box">
+                <h4>✅ Key Advantages</h4>
+                <ul>
+                    <li><strong>93.3%+ accuracy</strong> - Industry-leading transcription quality</li>
+                    <li><strong>2.9% speaker error rate</strong> - Precise "who said what" attribution</li>
+                    <li><strong>Ultra-low latency (~300ms)</strong> - Real-time streaming without delays</li>
+                    <li><strong>99+ languages supported</strong> - Truly global coverage</li>
+                    <li><strong>End-to-end platform</strong> - One API for all needs</li>
+                </ul>
+            </div>
+
+            <h3>When to Use Pre-recorded vs. Streaming?</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Scenario</th>
+                        <th>Use Pre-recorded</th>
+                        <th>Use Streaming</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Post-call analysis</td>
+                        <td>✅ Highest accuracy</td>
+                        <td>❌ Not needed</td>
+                    </tr>
+                    <tr>
+                        <td>Live meetings</td>
+                        <td>❌ Too slow</td>
+                        <td>✅ Real-time captions</td>
+                    </tr>
+                    <tr>
+                        <td>Speaker diarization needed</td>
+                        <td>✅ 2.9% error rate</td>
+                        <td>⚠️ Coming soon</td>
+                    </tr>
+                    <tr>
+                        <td>99+ languages</td>
+                        <td>✅ All supported</td>
+                        <td>⚠️ 6 languages only</td>
+                    </tr>
+                    <tr>
+                        <td>Advanced features</td>
+                        <td>✅ All available</td>
+                        <td>⚠️ Basic features</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Hybrid Approach (Recommended)</h3>
+            <div class="highlight-box">
+                <h4>🎯 Best of Both Worlds</h4>
+                <ol>
+                    <li><strong>During the call:</strong> Use streaming for live captions and real-time notes</li>
+                    <li><strong>After the call:</strong> Use pre-recorded for final transcript with speaker labels, summary, and insights</li>
+                </ol>
+                <p>This gives users immediate value during meetings while providing comprehensive documentation afterward.</p>
+            </div>
+
+            <h3>How to Improve Accuracy</h3>
+            <div class="success-box">
+                <h4>✅ Keyterms Prompting</h4>
+                <p>Improve recognition accuracy by up to 21% by providing domain-specific vocabulary:</p>
+                <ul>
+                    <li><strong>Participant names:</strong> "Dylan Fox", "Sarah Chen", "Michael Rodriguez"</li>
+                    <li><strong>Company terms:</strong> "AssemblyAI", "Universal-Streaming", "Speech Understanding"</li>
+                    <li><strong>Technical terms:</strong> "API endpoint", "WebSocket", "latency metrics"</li>
+                    <li><strong>Best practices:</strong> Max 100 terms, under 50 characters each</li>
+                </ul>
+            </div>
+
+            <h3>Handling Multichannel Audio</h3>
+            <p>Many meeting platforms (Zoom, Teams, Google Meet) can record each participant on separate audio channels for dramatically improved speaker identification:</p>
+            <ul>
+                <li><strong>Perfect speaker separation</strong> - No diarization errors</li>
+                <li><strong>No confusion or overlap</strong> - Clean single-speaker audio</li>
+                <li><strong>Faster processing</strong> - Diarization not needed</li>
+                <li><strong>Higher accuracy</strong> - Model processes clean audio</li>
+            </ul>
+
+            <h3>Production Recommendations</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Method</th>
+                        <th>Scalability</th>
+                        <th>Best For</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Async/Await</strong></td>
+                        <td>Low</td>
+                        <td>Prototypes, low volume</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Webhooks</strong></td>
+                        <td>High</td>
+                        <td>Production apps, SaaS products</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Polling</strong></td>
+                        <td>Medium</td>
+                        <td>Background jobs, progress UI</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <footer>
+            <p>naraMeet v3.0 - Powered by AssemblyAI & Claude Sonnet 4 AI</p>
+            <p>© 2024 All rights reserved</p>
+        </footer>
+    </div>
+</body>
+</html>

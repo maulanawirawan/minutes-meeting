@@ -3,7 +3,7 @@
 // ================================================================
 // FILE: server-enhancements.js
 // Purpose: Additional endpoints and functions for AssemblyAI features
-// Features: Auto Highlights, Sentiment, Entities, Chapters, SRT/VTT, Word Search
+// Features: Auto Highlights, Entities, Chapters, SRT/VTT, Word Search
 //
 // USAGE: Tambahkan ke server.js dengan:
 // const enhancements = require('./server-enhancements');
@@ -152,7 +152,7 @@ async function transcribeWithAssemblyAIEnhanced(filePath, language = 'id', enabl
 
             // ✅ NEW: Auto Intelligence Features
             auto_highlights: true,              // Detect important points
-            sentiment_analysis: true,           // Sentiment per utterance
+            sentiment_analysis: false,          // Sentiment per utterance (disabled)
             entity_detection: true,             // Detect names, dates, locations, etc
             auto_chapters: true,                // Auto divide into chapters
 
@@ -220,26 +220,6 @@ async function transcribeWithAssemblyAIEnhanced(filePath, language = 'id', enabl
             }
         } else {
             console.log(`   ❌ NOT RETURNED (will use fallback)`);
-        }
-
-        // Sentiment
-        console.log('\n💭 SENTIMENT ANALYSIS:');
-        if (transcript.sentiment_analysis_results) {
-            const sentimentCount = transcript.sentiment_analysis_results.length || 0;
-            console.log(`   ✅ Status: RETURNED`);
-            console.log(`   📊 Count: ${sentimentCount} sentiment segments`);
-            if (sentimentCount > 0) {
-                const positive = transcript.sentiment_analysis_results.filter(s => s.sentiment === 'POSITIVE').length;
-                const negative = transcript.sentiment_analysis_results.filter(s => s.sentiment === 'NEGATIVE').length;
-                const neutral = transcript.sentiment_analysis_results.filter(s => s.sentiment === 'NEUTRAL').length;
-                console.log(`   📈 Breakdown: ${positive} positive, ${neutral} neutral, ${negative} negative`);
-                console.log(`   📝 Sample (first 2):`);
-                transcript.sentiment_analysis_results.slice(0, 2).forEach((s, i) => {
-                    console.log(`      ${i + 1}. ${s.sentiment} (confidence: ${s.confidence}, text: "${s.text?.substring(0, 50)}...")`);
-                });
-            }
-        } else {
-            console.log(`   ❌ NOT RETURNED`);
         }
 
         // Entities
@@ -438,22 +418,14 @@ async function transcribeWithAssemblyAIEnhanced(filePath, language = 'id', enabl
             }
         }
 
-        // ✅ PROCESS UTTERANCES with SENTIMENT
+        // ✅ PROCESS UTTERANCES
         const segments = [];
 
         if (transcript.utterances && transcript.utterances.length > 0) {
             console.log(`🎤 Found ${transcript.utterances.length} utterances with speaker labels`);
 
-            // Get sentiment analysis results
-            const sentiments = transcript.sentiment_analysis_results || [];
-
             for (let i = 0; i < transcript.utterances.length; i++) {
                 const utterance = transcript.utterances[i];
-
-                // Find matching sentiment for this utterance
-                const sentiment = sentiments.find(s =>
-                    s.start >= utterance.start && s.end <= utterance.end
-                ) || { sentiment: 'NEUTRAL', confidence: 0.5 };
 
                 segments.push({
                     text: utterance.text.trim(),
@@ -461,9 +433,7 @@ async function transcribeWithAssemblyAIEnhanced(filePath, language = 'id', enabl
                     end: utterance.end,
                     speaker: `Speaker ${utterance.speaker}`,
                     confidence: utterance.confidence || 0.95,
-                    sequence: i,
-                    sentiment: sentiment.sentiment,
-                    sentiment_score: sentiment.confidence
+                    sequence: i
                 });
             }
 
@@ -472,8 +442,7 @@ async function transcribeWithAssemblyAIEnhanced(filePath, language = 'id', enabl
                 transcriptId: transcript.id,
                 highlights: transcript.auto_highlights_result?.results || [],
                 entities: transcript.entities || [],
-                chapters: transcript.chapters || [],
-                sentiments: sentiments
+                chapters: transcript.chapters || []
             };
         }
 
@@ -502,9 +471,7 @@ async function transcribeWithAssemblyAIEnhanced(filePath, language = 'id', enabl
                         end: word.end,
                         speaker: 'Speaker A',
                         confidence: 0.90,
-                        sequence: sentences.length,
-                        sentiment: 'NEUTRAL',
-                        sentiment_score: 0.5
+                        sequence: sentences.length
                     });
                     currentSentence = [];
                 }
@@ -529,9 +496,7 @@ async function transcribeWithAssemblyAIEnhanced(filePath, language = 'id', enabl
                     end: 30000,
                     speaker: 'Speaker A',
                     confidence: 0.95,
-                    sequence: 0,
-                    sentiment: 'NEUTRAL',
-                    sentiment_score: 0.5
+                    sequence: 0
                 }],
                 transcriptId: transcript.id,
                 highlights: [],
@@ -904,61 +869,6 @@ function setupEnhancements(app, assemblyClient, authMiddleware, query, queryOne)
     });
 
     // ================================================================
-    // ✅ ENDPOINT: Get Sentiment Overview
-    // ================================================================
-    app.get('/api/meetings/:id/sentiment', authMiddleware, async (req, res) => {
-        try {
-            const { id } = req.params;
-
-            console.log(`📊 Fetching sentiment data for meeting ${id}...`);
-
-            const sentimentStats = await query(
-                `SELECT
-                    COUNT(*) as total_segments,
-                    SUM(CASE WHEN sentiment = 'POSITIVE' THEN 1 ELSE 0 END) as positive_count,
-                    SUM(CASE WHEN sentiment = 'NEGATIVE' THEN 1 ELSE 0 END) as negative_count,
-                    SUM(CASE WHEN sentiment = 'NEUTRAL' THEN 1 ELSE 0 END) as neutral_count,
-                    ROUND(AVG(CASE
-                        WHEN sentiment = 'POSITIVE' THEN 1.0
-                        WHEN sentiment = 'NEGATIVE' THEN -1.0
-                        ELSE 0.0
-                    END)::numeric, 2) as sentiment_score
-                 FROM transcripts
-                 WHERE meeting_id = $1 AND deleted_at IS NULL`,
-                [id]
-            );
-
-            const transcripts = await query(
-                `SELECT speaker, text, sentiment, sentiment_score, start_time, end_time
-                 FROM transcripts
-                 WHERE meeting_id = $1 AND deleted_at IS NULL
-                 ORDER BY sequence_number`,
-                [id]
-            );
-
-            const stats = sentimentStats.rows[0];
-            console.log(`   📈 Sentiment stats: ${stats.positive_count} positive, ${stats.neutral_count} neutral, ${stats.negative_count} negative`);
-            console.log(`   📝 Transcript segments: ${transcripts.rows.length}`);
-
-            // ✅ FIX: Change field names to match frontend expectations
-            res.json({
-                success: true,
-                data: {
-                    overview: stats,           // ← FIXED: was "statistics"
-                    segments: transcripts.rows  // ← FIXED: was "transcripts"
-                }
-            });
-
-        } catch (error) {
-            console.error('❌ Get sentiment error:', error);
-            res.status(500).json({
-                success: false,
-                error: error.message
-            });
-        }
-    });
-
-    // ================================================================
     // ✅ ENDPOINT: Start Recording (Jitsi Integration)
     // ================================================================
     app.post('/api/meetings/:id/start-recording', authMiddleware, async (req, res) => {
@@ -1204,7 +1114,7 @@ function setupEnhancements(app, assemblyClient, authMiddleware, query, queryOne)
 
                 // AI Features
                 auto_highlights: true,
-                sentiment_analysis: true,
+                sentiment_analysis: false,
                 entity_detection: true,
                 auto_chapters: true,
 
@@ -1466,8 +1376,8 @@ function setupEnhancements(app, assemblyClient, authMiddleware, query, queryOne)
 
                     await query(
                         `INSERT INTO transcripts
-                         (meeting_id, text, start_time, end_time, speaker, confidence, sequence_number, sentiment, sentiment_score)
-                         VALUES ($1, $2, $3, $4, $5, $6, $7, 'NEUTRAL', 0.5)`,
+                         (meeting_id, text, start_time, end_time, speaker, confidence, sequence_number)
+                         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
                         [
                             id,
                             utterance.text,
@@ -1686,7 +1596,7 @@ async function transcribeIdentifyTranslate(filePath, options, assemblyClient, qu
             language_detection: language === 'multi',
             speech_model: "universal",
             auto_highlights: true,
-            sentiment_analysis: true,
+            sentiment_analysis: false,
             entity_detection: true,
             auto_chapters: true,
             format_text: true,
@@ -1729,7 +1639,6 @@ async function transcribeIdentifyTranslate(filePath, options, assemblyClient, qu
             text: transcript.text,
             utterances: transcript.utterances,
             auto_highlights: transcript.auto_highlights_result,
-            sentiment_analysis: transcript.sentiment_analysis_results,
             entities: transcript.entities,
             chapters: transcript.chapters
         };

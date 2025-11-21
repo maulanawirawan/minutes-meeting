@@ -513,7 +513,7 @@ async function generateKeyterms(meetingId) {
 
 /**
  * ✅ ENHANCED: Transcribe audio file with AssemblyAI
- * Now includes: Auto Highlights, Sentiment Analysis, Entity Detection, Auto Chapters
+ * Now includes: Auto Highlights, Entity Detection, Auto Chapters, Custom Formatting
  */
 async function transcribeWithAssemblyAI(filePath, language = 'id', enableDiarization = true, meetingId = null) {
     // Use enhanced transcription from enhancements module
@@ -1950,66 +1950,7 @@ app.get('/api/meetings/:id/highlights', authMiddleware, async (req, res) => {
     }
 });
 
-// Get meeting sentiment analysis
-app.get('/api/meetings/:id/sentiment', authMiddleware, async (req, res) => {
-    try {
-        const { id } = req.params;
-
-        // Verify meeting ownership
-        const meeting = await queryOne(
-            'SELECT id FROM meetings WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL',
-            [id, req.userId]
-        );
-
-        if (!meeting) {
-            return res.status(404).json({
-                success: false,
-                error: 'Meeting not found'
-            });
-        }
-
-        const sentimentData = await queryAll(
-            `SELECT
-                sentiment,
-                sentiment_score,
-                speaker,
-                text,
-                timestamp
-             FROM transcripts
-             WHERE meeting_id = $1 AND deleted_at IS NULL
-             ORDER BY sequence_number, timestamp`,
-            [id]
-        );
-
-        // Calculate overall sentiment
-        const total = sentimentData.length;
-        const positive = sentimentData.filter(s => s.sentiment === 'POSITIVE').length;
-        const negative = sentimentData.filter(s => s.sentiment === 'NEGATIVE').length;
-        const neutral = sentimentData.filter(s => s.sentiment === 'NEUTRAL').length;
-
-        res.json({
-            success: true,
-            data: {
-                overall: {
-                    total,
-                    positive,
-                    negative,
-                    neutral,
-                    positivePercent: total > 0 ? Math.round((positive / total) * 100) : 0,
-                    negativePercent: total > 0 ? Math.round((negative / total) * 100) : 0,
-                    neutralPercent: total > 0 ? Math.round((neutral / total) * 100) : 0
-                },
-                details: sentimentData
-            }
-        });
-    } catch (error) {
-        console.error('❌ Get sentiment error:', error);
-        res.status(500).json({
-            success: false,
-            error: 'Failed to fetch sentiment analysis'
-        });
-    }
-});
+// Sentiment analysis endpoint removed - feature deprecated
 
 // Get meeting entities
 app.get('/api/meetings/:id/entities', authMiddleware, async (req, res) => {
