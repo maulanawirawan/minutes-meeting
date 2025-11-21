@@ -2304,6 +2304,75 @@
             }
         }
 
+        async function loadEntities(meetingId) {
+            try {
+                const response = await apiRequest(`/api/meetings/${meetingId}/entities`);
+                const entities = response.data;
+
+                if (!entities || !Array.isArray(entities) || entities.length === 0) {
+                    console.log('No entities detected yet');
+                    return;
+                }
+
+                console.log(`✅ Loaded ${entities.length} entities`);
+            } catch (error) {
+                console.error('Failed to load entities:', error);
+            }
+        }
+
+        async function loadChapters(meetingId) {
+            try {
+                const response = await apiRequest(`/api/meetings/${meetingId}/chapters`);
+                const chapters = response.data;
+
+                if (!chapters || chapters.length === 0) {
+                    console.log('No chapters available yet');
+                    return;
+                }
+
+                console.log(`✅ Loaded ${chapters.length} chapters`);
+            } catch (error) {
+                console.error('Failed to load chapters:', error);
+            }
+        }
+
+        async function generateAISummary() {
+            if (!currentMeeting) {
+                showStatus('❌ No meeting to summarize', 'error');
+                return;
+            }
+
+            showStatus('🤖 Generating AI summary with LeMUR (Claude Sonnet 4)...', 'success');
+
+            try {
+                const response = await apiRequest('/api/summary/generate', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        meeting_id: currentMeeting.id
+                    })
+                });
+
+                showStatus('✅ AI summary generated successfully!', 'success');
+
+                // Display the summary
+                if (response.data && response.data.summary) {
+                    const summary = response.data.summary;
+                    const aiSummaryElement = document.getElementById('aiSummary');
+                    if (aiSummaryElement) {
+                        aiSummaryElement.innerHTML = `
+                            <div class="analysis-section">
+                                <div style="white-space: pre-wrap; line-height: 1.8;">${summary.key_points || summary}</div>
+                            </div>
+                        `;
+                    }
+                }
+
+            } catch (error) {
+                console.error('Generate summary error:', error);
+                showStatus(`❌ ${error.message}`, 'error');
+            }
+        }
+
         // Export Functions
         async function exportAs(format) {
             if (!currentMeeting) {
