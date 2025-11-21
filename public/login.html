@@ -1057,17 +1057,93 @@
             type();
         }
 
+        // Enhanced Typing Animation with Error Correction
+        async function typeTextWithErrors(element, finalText, speed = 100) {
+            element.textContent = '';
+            element.style.borderRight = '3px solid var(--color-primary)';
+
+            // Typing scenarios with intentional errors
+            const scenarios = {
+                'NARAMEET': [
+                    { text: 'NARA', delay: 150 },
+                    { text: 'NARAMEE', delay: 100 },
+                    { text: 'NARAMEEET', delay: 50 }, // Typo - extra E
+                    { text: 'NARAMEET', delay: 200, delete: 1 }, // Delete 1
+                    { text: 'NARAMEET', delay: 500 } // Final, pause
+                ],
+                'AI-Powered Meeting Minutes': [
+                    { text: 'AI-Powerd ', delay: 100 }, // Typo - missing 'e'
+                    { text: 'AI-Power', delay: 50, delete: 2 }, // Delete 'd '
+                    { text: 'AI-Powered ', delay: 100 },
+                    { text: 'AI-Powered Meetin', delay: 80 }, // Missing 'g'
+                    { text: 'AI-Powered Meeting ', delay: 100 },
+                    { text: 'AI-Powered Meeting Minuets', delay: 60 }, // Typo
+                    { text: 'AI-Powered Meeting Minu', delay: 50, delete: 3 }, // Delete 'ets'
+                    { text: 'AI-Powered Meeting Minutes', delay: 300 } // Final
+                ]
+            };
+
+            const scenario = scenarios[finalText];
+
+            if (scenario) {
+                // Play the scenario
+                for (let step of scenario) {
+                    if (step.delete) {
+                        // Delete animation
+                        const currentText = element.textContent;
+                        for (let i = 0; i < step.delete; i++) {
+                            await new Promise(resolve => setTimeout(resolve, 50));
+                            element.textContent = element.textContent.slice(0, -1);
+                        }
+                    }
+
+                    // Type the text
+                    const targetText = step.text;
+                    const currentLength = element.textContent.length;
+
+                    for (let i = currentLength; i < targetText.length; i++) {
+                        await new Promise(resolve => setTimeout(resolve, speed));
+                        element.textContent = targetText.substring(0, i + 1);
+                    }
+
+                    // Wait for specified delay
+                    await new Promise(resolve => setTimeout(resolve, step.delay));
+                }
+            } else {
+                // Fallback to normal typing
+                for (let i = 0; i < finalText.length; i++) {
+                    await new Promise(resolve => setTimeout(resolve, speed));
+                    element.textContent += finalText[i];
+                }
+            }
+
+            // Keep cursor blinking
+            setTimeout(() => {
+                element.style.borderRight = '3px solid transparent';
+                element.style.animation = 'blink 0.7s infinite';
+            }, 500);
+        }
+
+        // Add blink animation to CSS
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes blink {
+                0%, 49% { border-right-color: var(--color-primary); }
+                50%, 100% { border-right-color: transparent; }
+            }
+        `;
+        document.head.appendChild(style);
+
         // Initialize Typing Animation on Page Load
         window.addEventListener('DOMContentLoaded', async function() {
             // Start typing animation for logo and subtitle
             const logoElement = document.getElementById('logoText');
             const subtitleElement = document.getElementById('subtitleText');
 
-            // Type the logo text
-            typeText(logoElement, 'NARAMEET', 120, function() {
-                // After logo completes, type the subtitle
-                typeText(subtitleElement, 'AI-Powered Meeting Minutes', 50, null, true);
-            }, true);
+            // Type the logo text with errors
+            await typeTextWithErrors(logoElement, 'NARAMEET', 120);
+            // After logo completes, type the subtitle with errors
+            await typeTextWithErrors(subtitleElement, 'AI-Powered Meeting Minutes', 80);
 
             // Wait for API to be ready
             if (window.API_READY) {
