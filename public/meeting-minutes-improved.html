@@ -1602,9 +1602,6 @@
             <button class="tab-btn" onclick="switchTab('highlights')">
                 <span>✨ HIGHLIGHTS</span>
             </button>
-            <button class="tab-btn" onclick="switchTab('sentiment')">
-                <span>😊 SENTIMENT</span>
-            </button>
             <button class="tab-btn" onclick="switchTab('analysis')">
                 <span>🔍 ANALYSIS</span>
             </button>
@@ -2043,27 +2040,6 @@
                     <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
                         No highlights available. Transcribe a meeting first.
                     </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ✅ SENTIMENT TAB -->
-        <div id="sentiment" class="content-section">
-            <div class="cyber-card">
-                <h2>😊 Sentiment Analysis</h2>
-                <p style="margin-bottom: 20px; color: var(--text-secondary);">
-                    Emotional tone analysis throughout the meeting
-                </p>
-
-                <!-- Sentiment Overview -->
-                <div id="sentimentOverview" style="margin-bottom: 30px;">
-                    <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
-                        No sentiment data available. Transcribe a meeting first.
-                    </div>
-                </div>
-
-                <!-- Sentiment Timeline -->
-                <div id="sentimentTimeline">
                 </div>
             </div>
         </div>
@@ -2774,7 +2750,6 @@
 
                 // ✅ Load enhanced features
                 await loadHighlights(meetingId);
-                await loadSentiment(meetingId);
                 await loadEntities(meetingId);
                 await loadChapters(meetingId);
 
@@ -3117,7 +3092,6 @@
 
                     // ✅ Load AI features after transcription
                     await loadHighlights(currentMeeting.id);
-                    await loadSentiment(currentMeeting.id);
                     await loadEntities(currentMeeting.id);
                     await loadChapters(currentMeeting.id);
 
@@ -3188,7 +3162,6 @@
 
                     // ✅ Load AI features after transcription
                     await loadHighlights(currentMeeting.id);
-                    await loadSentiment(currentMeeting.id);
                     await loadEntities(currentMeeting.id);
                     await loadChapters(currentMeeting.id);
 
@@ -4493,78 +4466,6 @@
                 console.log(`✅ Loaded ${highlights.length} highlights`);
             } catch (error) {
                 console.error('Failed to load highlights:', error);
-            }
-        }
-
-        async function loadSentiment(meetingId) {
-            try {
-                const response = await apiRequest(`/api/meetings/${meetingId}/sentiment`);
-                const data = response.data;
-
-                const overviewContainer = document.getElementById('sentimentOverview');
-                const timelineContainer = document.getElementById('sentimentTimeline');
-
-                if (!data || !data.overview) {
-                    overviewContainer.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-secondary);">No sentiment data available yet.</div>';
-                    return;
-                }
-
-                const overview = data.overview;
-                const total = overview.positive_count + overview.negative_count + overview.neutral_count;
-
-                // Overview Cards
-                overviewContainer.innerHTML = `
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
-                        <div style="background: rgba(0, 255, 0, 0.1); border: 2px solid #00ff88; padding: 25px; border-radius: 10px; text-align: center;">
-                            <div style="font-size: 3em;">😊</div>
-                            <div style="font-size: 2em; color: #00ff88; margin: 10px 0;">${overview.positive_count}</div>
-                            <div style="color: var(--text-secondary);">Positive (${((overview.positive_count/total)*100).toFixed(1)}%)</div>
-                        </div>
-                        <div style="background: rgba(255, 255, 255, 0.05); border: 2px solid #aaa; padding: 25px; border-radius: 10px; text-align: center;">
-                            <div style="font-size: 3em;">😐</div>
-                            <div style="font-size: 2em; color: #aaa; margin: 10px 0;">${overview.neutral_count}</div>
-                            <div style="color: var(--text-secondary);">Neutral (${((overview.neutral_count/total)*100).toFixed(1)}%)</div>
-                        </div>
-                        <div style="background: rgba(255, 0, 0, 0.1); border: 2px solid #ff0066; padding: 25px; border-radius: 10px; text-align: center;">
-                            <div style="font-size: 3em;">😟</div>
-                            <div style="font-size: 2em; color: #ff0066; margin: 10px 0;">${overview.negative_count}</div>
-                            <div style="color: var(--text-secondary);">Negative (${((overview.negative_count/total)*100).toFixed(1)}%)</div>
-                        </div>
-                    </div>
-                `;
-
-                // Sentiment Timeline
-                if (data.segments && data.segments.length > 0) {
-                    timelineContainer.innerHTML = `
-                        <h3 style="margin: 30px 0 20px; color: var(--text-primary);">📊 Sentiment Timeline</h3>
-                        ${data.segments.map(seg => {
-                            const emoji = seg.sentiment === 'POSITIVE' ? '😊' : seg.sentiment === 'NEGATIVE' ? '😟' : '😐';
-                            const color = seg.sentiment === 'POSITIVE' ? '#00ff88' : seg.sentiment === 'NEGATIVE' ? '#ff0066' : '#aaa';
-                            return `
-                                <div style="background: var(--card-bg); border-left: 4px solid ${color}; padding: 15px; margin-bottom: 10px; border-radius: 5px;">
-                                    <div style="display: flex; align-items: center; gap: 15px;">
-                                        <div style="font-size: 2em;">${emoji}</div>
-                                        <div style="flex: 1;">
-                                            <div style="color: ${color}; font-weight: bold; margin-bottom: 5px;">
-                                                ${seg.speaker} - ${seg.sentiment}
-                                            </div>
-                                            <div style="color: var(--text-secondary); font-size: 0.95em;">
-                                                ${seg.text}
-                                            </div>
-                                        </div>
-                                        <div style="color: var(--text-secondary); font-size: 0.9em;">
-                                            ${formatTime(seg.start_time)}
-                                        </div>
-                                    </div>
-                                </div>
-                            `;
-                        }).join('')}
-                    `;
-                }
-
-                console.log(`✅ Loaded sentiment data`);
-            } catch (error) {
-                console.error('Failed to load sentiment:', error);
             }
         }
 
