@@ -1332,7 +1332,7 @@
             }
 
             try {
-                const response = await apiRequest('/api/auth/me');
+                const response = await apiRequest('/api/verify');
                 currentUser = response.user;
                 document.getElementById('userEmail').textContent = currentUser.email;
             } catch (error) {
