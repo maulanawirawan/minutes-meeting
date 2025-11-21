@@ -883,16 +883,85 @@
         }
         
         @keyframes slideIn {
-            from { 
-                opacity: 0; 
-                transform: translateX(-20px); 
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
             }
-            to { 
-                opacity: 1; 
-                transform: translateX(0); 
+            to {
+                opacity: 1;
+                transform: translateX(0);
             }
         }
-        
+
+        .nav-tabs {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background: var(--bg-primary);
+            padding: 15px 0;
+            margin: -20px -20px 20px -20px;
+            border-bottom: 3px solid var(--border-color);
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            flex-wrap: wrap;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        [data-theme="light"] .nav-tabs {
+            background: linear-gradient(135deg, #f0f9ff, #ffffff);
+            border-bottom: 3px solid #0099ff;
+            box-shadow: 0 4px 15px rgba(0, 153, 255, 0.15);
+        }
+
+        .tab-btn {
+            padding: 12px 20px;
+            background: rgba(0, 255, 136, 0.1);
+            border: 2px solid var(--border-color);
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+            transition: all 0.3s;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        [data-theme="light"] .tab-btn {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(240, 249, 255, 0.8));
+            border: 2px solid #0099ff;
+            color: #003366;
+        }
+
+        .tab-btn:hover {
+            background: rgba(0, 255, 136, 0.2);
+            border-color: var(--color-primary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 255, 136, 0.3);
+        }
+
+        [data-theme="light"] .tab-btn:hover {
+            background: linear-gradient(135deg, rgba(0, 204, 102, 0.15), rgba(0, 153, 255, 0.15));
+            border-color: #00cc66;
+            box-shadow: 0 4px 15px rgba(0, 153, 255, 0.2);
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(45deg, var(--color-primary), var(--color-secondary));
+            color: var(--bg-primary);
+            border-color: var(--color-primary);
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+        }
+
+        [data-theme="light"] .tab-btn.active {
+            background: linear-gradient(135deg, #00cc66, #0099ff);
+            color: #ffffff;
+            border-color: #00cc66;
+            box-shadow: 0 0 15px rgba(0, 153, 255, 0.3);
+        }
+
         .transcript-container {
             background: rgba(0, 0, 0, 0.7);
             border: 2px solid var(--border-color);
@@ -1182,64 +1251,89 @@
             gap: 15px;
             margin-bottom: 20px;
         }
-        
+
         .db-meter {
             flex: 1;
-            height: 40px;
+            height: 50px;
             background: rgba(0, 0, 0, 0.5);
-            border: 2px solid var(--border-color);
-            border-radius: 5px;
+            border: 3px solid var(--border-color);
+            border-radius: 8px;
             position: relative;
             overflow: hidden;
         }
-        
+
+        [data-theme="light"] .db-meter {
+            background: rgba(230, 243, 255, 0.6);
+            border: 3px solid #0099ff;
+        }
+
         .db-meter-fill {
             height: 100%;
-            background: linear-gradient(90deg, 
-                #00ff88 0%, 
-                #00ff88 60%, 
-                #ffaa00 80%, 
+            background: linear-gradient(90deg,
+                #00ff88 0%,
+                #00ff88 60%,
+                #ffaa00 80%,
                 #ff0066 100%);
             width: 0%;
             transition: width 0.1s ease-out;
             box-shadow: 0 0 10px var(--color-primary);
         }
-        
+
+        [data-theme="light"] .db-meter-fill {
+            background: linear-gradient(90deg,
+                #00cc66 0%,
+                #00cc66 60%,
+                #ff9900 80%,
+                #ff0044 100%);
+            box-shadow: 0 0 8px rgba(0, 153, 255, 0.3);
+        }
+
         .db-value {
-            font-size: 1.5em;
+            font-size: 1.8em;
             font-weight: bold;
             color: var(--color-primary);
-            min-width: 80px;
+            min-width: 100px;
             text-align: right;
         }
-        
+
+        [data-theme="light"] .db-value {
+            color: #0099ff;
+        }
+
         .waveform-canvas {
             width: 100%;
-            height: 100px;
+            height: 120px;
             background: rgba(0, 0, 0, 0.3);
-            border: 2px solid var(--border-color);
-            border-radius: 5px;
+            border: 3px solid var(--border-color);
+            border-radius: 8px;
         }
-        
+
         [data-theme="light"] .waveform-canvas {
-            background: rgba(255, 255, 255, 0.5);
+            background: rgba(230, 243, 255, 0.6);
+            border: 3px solid #0099ff;
         }
-        
+
         .audio-quality-indicator {
             display: flex;
-            gap: 10px;
+            gap: 12px;
             margin-top: 15px;
             flex-wrap: wrap;
         }
-        
+
         .quality-badge {
-            padding: 8px 15px;
-            border-radius: 20px;
-            font-size: 0.9em;
+            padding: 10px 18px;
+            border-radius: 25px;
+            font-size: 1em;
             font-weight: bold;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
+            border: 2px solid;
+        }
+
+        [data-theme="light"] .quality-badge {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(240, 249, 255, 0.8)) !important;
+            color: #003366 !important;
         }
         
         .quality-excellent {
@@ -2734,8 +2828,8 @@
                     if (summary.ai_generated) {
                         displayAISummary(summary);
                     }
-                    document.getElementById('keyPointsManual').value = summary.key_points || '';
-                    document.getElementById('actionItemsManual').value = summary.action_items || '';
+                    // Don't auto-fill manual summary fields - user should manually input
+                    // Only populate next meeting date as it's a metadata field
                     document.getElementById('nextMeeting').value = summary.next_meeting_date ? summary.next_meeting_date.slice(0, 16) : '';
                 }
                 
@@ -3180,7 +3274,24 @@
                 }
             } catch (error) {
                 console.error('Processing error:', error);
-                showStatus(`❌ ${error.message}`, 'error');
+                let errorMsg = error.message;
+
+                // Better error messages for common issues
+                if (errorMsg.includes('500')) {
+                    errorMsg = 'Server error saat processing audio. Mungkin: \n' +
+                              '• AssemblyAI API key tidak valid\n' +
+                              '• File audio corrupt atau format tidak didukung\n' +
+                              '• Server kehabisan memory\n' +
+                              'Check server logs untuk detail.';
+                } else if (errorMsg.includes('413')) {
+                    errorMsg = 'File audio terlalu besar. Maksimal 100MB.';
+                } else if (errorMsg.includes('415')) {
+                    errorMsg = 'Format audio tidak didukung. Gunakan WAV, MP3, atau M4A.';
+                } else if (errorMsg.includes('Network')) {
+                    errorMsg = 'Network error. Periksa koneksi internet.';
+                }
+
+                showStatus(`❌ ${errorMsg}`, 'error');
             } finally {
                 setTimeout(() => {
                     document.getElementById('transcriptionProgress').style.width = '0%';
