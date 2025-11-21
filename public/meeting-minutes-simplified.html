@@ -1515,7 +1515,7 @@
                 const response = await apiRequest('/api/users');
                 const select = document.getElementById('systemUserSelect');
                 select.innerHTML = '<option value="">-- Select user to invite --</option>';
-                response.users.forEach(user => {
+                response.data.forEach(user => {
                     if (user.id !== currentUser.id) {
                         select.innerHTML += `<option value="${user.id}">${user.name} (${user.email})</option>`;
                     }
@@ -1783,7 +1783,7 @@
 
                 mediaRecorder.onstop = async () => {
                     const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-                    await saveAudio(audioBlob);
+                    await processAudio(audioBlob);
                     stopAudioVisualization();
                 };
 
@@ -1944,22 +1944,69 @@
                 return;
             }
 
+            showStatus(`📁 Uploading: ${file.name}`, 'success');
+
             try {
                 const formData = new FormData();
                 formData.append('audio', file);
-                formData.append('meetingId', currentMeeting.id);
+                formData.append('meeting_id', currentMeeting.id);
+                formData.append('language', document.getElementById('defaultLanguage').value);
+                formData.append('enable_diarization', document.getElementById('defaultDiarization').checked);
+                formData.append('enable_normalize', document.getElementById('enableNormalize').checked);
+                formData.append('enable_noise_reduction', document.getElementById('enableNoiseReduction').checked);
+                formData.append('enable_compression', document.getElementById('enableCompression').checked);
 
-                const response = await apiRequest('/api/meetings/upload-audio', {
+                const token = localStorage.getItem('token');
+                const progress = document.getElementById('transcriptionProgress');
+                progress.style.width = '30%';
+
+                const response = await fetch(`${API_URL}/api/transcribe`, {
                     method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
                     body: formData
                 });
 
-                currentMeeting.audioPath = response.audioPath;
-                displayAudioPlayback(response.audioPath);
-                showStatus('Audio uploaded successfully!', 'success');
+                progress.style.width = '70%';
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+                progress.style.width = '100%';
+
+                if (data.success && data.transcript.length > 0) {
+                    transcript = data.transcript;
+                    displayTranscript();
+                    showStatus(`✅ Transcription complete! (${transcript.length} segments)`, 'success');
+
+                    // Load AI features after transcription
+                    await loadHighlights(currentMeeting.id);
+                    await loadEntities(currentMeeting.id);
+                    await loadChapters(currentMeeting.id);
+
+                    // Auto-generate summary if enabled
+                    if (document.getElementById('autoSummaryGeneration')?.checked) {
+                        setTimeout(() => {
+                            generateAISummary();
+                        }, 2000);
+                    }
+
+                    setTimeout(() => {
+                        const transcriptTab = document.querySelector('[data-tab="transcript"]');
+                        if (transcriptTab) transcriptTab.click();
+                    }, 1000);
+                } else {
+                    throw new Error('No transcript generated');
+                }
             } catch (error) {
-                console.error('Failed to upload audio:', error);
-                showStatus('Failed to upload audio', 'error');
+                console.error('Processing error:', error);
+                showStatus(`❌ ${error.message}`, 'error');
+            } finally {
+                setTimeout(() => {
+                    document.getElementById('transcriptionProgress').style.width = '0%';
+                }, 3000);
+                input.value = '';
             }
         }
 
@@ -1995,6 +2042,77 @@
             } catch (error) {
                 console.error('Failed to delete audio:', error);
                 showStatus('Failed to delete audio', 'error');
+            }
+        }
+
+        async function processAudio(blob) {
+            if (!currentMeeting) {
+                showStatus('Please create a meeting first', 'error');
+                return;
+            }
+
+            showStatus('🔄 Processing audio...', 'success');
+
+            try {
+                const formData = new FormData();
+                formData.append('audio', blob, 'recording.wav');
+                formData.append('meeting_id', currentMeeting.id);
+                formData.append('language', document.getElementById('defaultLanguage').value);
+                formData.append('enable_diarization', document.getElementById('defaultDiarization').checked);
+                formData.append('enable_normalize', document.getElementById('enableNormalize').checked);
+                formData.append('enable_noise_reduction', document.getElementById('enableNoiseReduction').checked);
+                formData.append('enable_compression', document.getElementById('enableCompression').checked);
+
+                const token = localStorage.getItem('token');
+                const progress = document.getElementById('transcriptionProgress');
+                progress.style.width = '30%';
+
+                const response = await fetch(`${API_URL}/api/transcribe`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData
+                });
+
+                progress.style.width = '70%';
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+                progress.style.width = '100%';
+
+                if (data.success && data.transcript.length > 0) {
+                    transcript = data.transcript;
+                    displayTranscript();
+                    showStatus(`✅ Transcription complete! (${transcript.length} segments)`, 'success');
+
+                    // Load AI features after transcription
+                    await loadHighlights(currentMeeting.id);
+                    await loadEntities(currentMeeting.id);
+                    await loadChapters(currentMeeting.id);
+
+                    // Auto-generate summary if enabled
+                    if (document.getElementById('autoSummaryGeneration')?.checked) {
+                        setTimeout(() => {
+                            generateAISummary();
+                        }, 2000);
+                    }
+
+                    setTimeout(() => {
+                        const transcriptTab = document.querySelector('[data-tab="transcript"]');
+                        if (transcriptTab) transcriptTab.click();
+                    }, 1000);
+                } else {
+                    throw new Error('No transcript generated');
+                }
+            } catch (error) {
+                console.error('Processing error:', error);
+                showStatus(`❌ ${error.message}`, 'error');
+            } finally {
+                setTimeout(() => {
+                    document.getElementById('transcriptionProgress').style.width = '0%';
+                }, 3000);
             }
         }
 
