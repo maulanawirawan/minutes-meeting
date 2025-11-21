@@ -1066,9 +1066,9 @@
             const scenarios = {
                 'NARAMEET': [
                     { text: 'NARA', delay: 150 },
-                    { text: 'NARAMEE', delay: 100 },
-                    { text: 'NARAMEEET', delay: 50 }, // Typo - extra E
-                    { text: 'NARAMEET', delay: 200, delete: 1 }, // Delete 1
+                    { text: 'NARAME', delay: 100 },
+                    { text: 'NARAMEET', delay: 100 }, // Typo - extra E
+                    { text: 'NARAMEE', delay: 200, delete: 1 }, // Delete 1
                     { text: 'NARAMEET', delay: 500 } // Final, pause
                 ],
                 'AI-Powered Meeting Minutes': [
@@ -1135,7 +1135,12 @@
         document.head.appendChild(style);
 
         // Initialize Typing Animation on Page Load
+        let animationCompleted = false; // Flag to prevent re-running animation
+
         window.addEventListener('DOMContentLoaded', async function() {
+            // Prevent animation from running more than once
+            if (animationCompleted) return;
+
             // Start typing animation for logo and subtitle
             const logoElement = document.getElementById('logoText');
             const subtitleElement = document.getElementById('subtitleText');
@@ -1144,6 +1149,9 @@
             await typeTextWithErrors(logoElement, 'NARAMEET', 120);
             // After logo completes, type the subtitle with errors
             await typeTextWithErrors(subtitleElement, 'AI-Powered Meeting Minutes', 80);
+
+            // Mark animation as completed to prevent looping
+            animationCompleted = true;
 
             // Wait for API to be ready
             if (window.API_READY) {
