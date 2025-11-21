@@ -3274,7 +3274,24 @@
                 }
             } catch (error) {
                 console.error('Processing error:', error);
-                showStatus(`❌ ${error.message}`, 'error');
+                let errorMsg = error.message;
+
+                // Better error messages for common issues
+                if (errorMsg.includes('500')) {
+                    errorMsg = 'Server error saat processing audio. Mungkin: \n' +
+                              '• AssemblyAI API key tidak valid\n' +
+                              '• File audio corrupt atau format tidak didukung\n' +
+                              '• Server kehabisan memory\n' +
+                              'Check server logs untuk detail.';
+                } else if (errorMsg.includes('413')) {
+                    errorMsg = 'File audio terlalu besar. Maksimal 100MB.';
+                } else if (errorMsg.includes('415')) {
+                    errorMsg = 'Format audio tidak didukung. Gunakan WAV, MP3, atau M4A.';
+                } else if (errorMsg.includes('Network')) {
+                    errorMsg = 'Network error. Periksa koneksi internet.';
+                }
+
+                showStatus(`❌ ${errorMsg}`, 'error');
             } finally {
                 setTimeout(() => {
                     document.getElementById('transcriptionProgress').style.width = '0%';
