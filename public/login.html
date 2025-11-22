@@ -1057,28 +1057,29 @@
             type();
         }
 
-        // Enhanced Typing Animation with Error Correction
+        // Enhanced Typing Animation with Error Correction (Looping)
         async function typeTextWithErrors(element, finalText, speed = 100) {
             element.textContent = '';
             element.style.borderRight = '3px solid var(--color-primary)';
+            element.style.animation = 'none'; // Reset any existing animation
 
             // Typing scenarios with intentional errors
             const scenarios = {
                 'NARAMEET': [
                     { text: 'NARA', delay: 150 },
                     { text: 'NARAME', delay: 100 },
-                    { text: 'NARAMEET', delay: 100 }, // Typo - extra E
+                    { text: 'NARAMEET', delay: 100 }, // Typo - extra T
                     { text: 'NARAMEE', delay: 200, delete: 1 }, // Delete 1
-                    { text: 'NARAMEET', delay: 500 } // Final, pause
+                    { text: 'NARAMEET', delay: 500 } // Final correct
                 ],
                 'AI-Powered Meeting Minutes': [
-                    { text: 'AI-Powerd ', delay: 100 }, // Typo - missing 'e'
+                    { text: 'AI-Powerd ', delay: 100 }, // Typo
                     { text: 'AI-Power', delay: 50, delete: 2 }, // Delete 'd '
                     { text: 'AI-Powered ', delay: 100 },
                     { text: 'AI-Powered Meetin', delay: 80 }, // Missing 'g'
                     { text: 'AI-Powered Meeting ', delay: 100 },
                     { text: 'AI-Powered Meeting Minuets', delay: 60 }, // Typo
-                    { text: 'AI-Powered Meeting Minu', delay: 50, delete: 3 }, // Delete 'ets'
+                    { text: 'AI-Powered Meeting Minu', delay: 50, delete: 3 }, // Delete
                     { text: 'AI-Powered Meeting Minutes', delay: 300 } // Final
                 ]
             };
@@ -1086,18 +1087,14 @@
             const scenario = scenarios[finalText];
 
             if (scenario) {
-                // Play the scenario
                 for (let step of scenario) {
                     if (step.delete) {
-                        // Delete animation
-                        const currentText = element.textContent;
                         for (let i = 0; i < step.delete; i++) {
                             await new Promise(resolve => setTimeout(resolve, 50));
                             element.textContent = element.textContent.slice(0, -1);
                         }
                     }
 
-                    // Type the text
                     const targetText = step.text;
                     const currentLength = element.textContent.length;
 
@@ -1106,22 +1103,45 @@
                         element.textContent = targetText.substring(0, i + 1);
                     }
 
-                    // Wait for specified delay
                     await new Promise(resolve => setTimeout(resolve, step.delay));
                 }
             } else {
-                // Fallback to normal typing
                 for (let i = 0; i < finalText.length; i++) {
                     await new Promise(resolve => setTimeout(resolve, speed));
                     element.textContent += finalText[i];
                 }
             }
+        }
 
-            // Keep cursor blinking
-            setTimeout(() => {
-                element.style.borderRight = '3px solid transparent';
-                element.style.animation = 'blink 0.7s infinite';
-            }, 500);
+        // Delete text character by character
+        async function deleteText(element, speed = 40) {
+            while (element.textContent.length > 0) {
+                await new Promise(resolve => setTimeout(resolve, speed));
+                element.textContent = element.textContent.slice(0, -1);
+            }
+        }
+
+        // Main looping animation
+        async function runTypingAnimationLoop(logoElement, subtitleElement) {
+            while (true) {
+                // Type logo with errors
+                await typeTextWithErrors(logoElement, 'NARAMEET', 120);
+
+                // Type subtitle with errors
+                await typeTextWithErrors(subtitleElement, 'AI-Powered Meeting Minutes', 80);
+
+                // Wait 4 seconds before deleting
+                await new Promise(resolve => setTimeout(resolve, 4000));
+
+                // Delete subtitle first (faster)
+                await deleteText(subtitleElement, 30);
+
+                // Delete logo
+                await deleteText(logoElement, 50);
+
+                // Short pause before restarting
+                await new Promise(resolve => setTimeout(resolve, 800));
+            }
         }
 
         // Add blink animation to CSS
@@ -1135,23 +1155,16 @@
         document.head.appendChild(style);
 
         // Initialize Typing Animation on Page Load
-        let animationCompleted = false; // Flag to prevent re-running animation
-
         window.addEventListener('DOMContentLoaded', async function() {
-            // Prevent animation from running more than once
-            if (animationCompleted) return;
-
-            // Start typing animation for logo and subtitle
             const logoElement = document.getElementById('logoText');
             const subtitleElement = document.getElementById('subtitleText');
 
-            // Type the logo text with errors
-            await typeTextWithErrors(logoElement, 'NARAMEET', 120);
-            // After logo completes, type the subtitle with errors
-            await typeTextWithErrors(subtitleElement, 'AI-Powered Meeting Minutes', 80);
+            // Add cursor style to both elements
+            logoElement.style.borderRight = '3px solid var(--color-primary)';
+            subtitleElement.style.borderRight = '3px solid transparent';
 
-            // Mark animation as completed to prevent looping
-            animationCompleted = true;
+            // Start the looping animation (runs forever)
+            runTypingAnimationLoop(logoElement, subtitleElement);
 
             // Wait for API to be ready
             if (window.API_READY) {
